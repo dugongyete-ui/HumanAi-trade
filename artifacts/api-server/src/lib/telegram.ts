@@ -178,9 +178,13 @@ export function registerCommands(
       const msg2 = err instanceof Error ? err.message : "Unknown error";
       if (msg2 === "market_closed" || msg2.toLowerCase().includes("closed")) {
         await sendMessage(
-          "🔒 <b>Pasar XAUUSD Sedang Tutup</b>\n\n" +
-            "Pasar emas tutup setiap hari Sabtu pukul 04:00 WIB hingga Senin pukul 04:00 WIB.\n\n" +
-            "Bot akan otomatis menganalisis kembali saat pasar buka. Tidak perlu melakukan apa-apa.",
+          "🔒 <b>Pasar XAUUSD Deriv Sedang Tutup</b>\n\n" +
+            "📅 <b>Jadwal Deriv frxXAUUSD:</b>\n" +
+            "• Buka: Senin – Jumat, mulai <b>07:00 WIB</b> (00:00 UTC)\n" +
+            "• Tutup: Sabtu dini hari s/d Senin 07:00 WIB\n" +
+            "• Jumat tutup lebih awal pukul ~03:55 WIB (20:55 UTC)\n\n" +
+            "⏰ Bot akan otomatis menganalisis dalam ≤15 menit setelah pasar buka.\n" +
+            "Tidak perlu melakukan apa-apa.",
           chatId
         );
       } else {

@@ -181,11 +181,34 @@ export interface AISignal {
   invalidation: string;
 }
 
+function getTradingSession(): string {
+  const utcHour = new Date().getUTCHours();
+  if (utcHour >= 22 || utcHour < 7) return "Sydney/Tokyo (Asia) — 05:00–14:00 WIB";
+  if (utcHour >= 7 && utcHour < 12) return "London — 14:00–19:00 WIB";
+  if (utcHour >= 12 && utcHour < 16) return "London + New York Overlap — 19:00–23:00 WIB";
+  if (utcHour >= 16 && utcHour < 21) return "New York — 23:00–04:00 WIB";
+  return "Off-hours / transisi sesi";
+}
+
 export async function analyzeMarket(timeframes: TimeframeData[], currentPrice: number): Promise<AISignal> {
+  const now = new Date();
+  const wibTime = now.toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
   const sensoryData = {
     symbol: "XAUUSD",
     current_price: currentPrice,
-    analysis_time: new Date().toISOString(),
+    analysis_time: now.toISOString(),
+    analysis_time_wib: wibTime,
+    trading_session: getTradingSession(),
     timeframes: timeframes.map((tf) => ({
       timeframe: tf.timeframe,
       current_price: tf.current_price,

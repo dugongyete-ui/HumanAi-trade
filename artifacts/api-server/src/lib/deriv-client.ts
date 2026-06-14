@@ -97,6 +97,21 @@ export async function fetchCurrentTick(): Promise<Tick> {
   };
 }
 
+export async function checkMarketOpen(): Promise<boolean> {
+  try {
+    const response = await connectAndRequest<{
+      active_symbols: Array<{ symbol: string; exchange_is_open: number }>;
+    }>(
+      { active_symbols: "brief", product_type: "basic" },
+      "active_symbols"
+    );
+    const gold = response.active_symbols.find((s) => s.symbol === SYMBOL);
+    return gold?.exchange_is_open === 1;
+  } catch {
+    return false;
+  }
+}
+
 export const GRANULARITY = {
   M1: 60,
   M5: 300,

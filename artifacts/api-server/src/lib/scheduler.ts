@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { fetchCandles, fetchCurrentTick, GRANULARITY } from "./deriv-client.js";
+import { fetchCandles, fetchCurrentTick, checkMarketOpen, GRANULARITY } from "./deriv-client.js";
 import { buildTimeframeData } from "./indicators.js";
 import { analyzeMarket } from "./ai-agent.js";
 import { storeSignal, getSignals, getLastSignal, getTotalCount, type Signal } from "./signal-store.js";
@@ -34,6 +34,13 @@ export class MarketClosedError extends Error {
 
 export async function runAnalysis(): Promise<Signal | null> {
   logger.info("Starting XAUUSD market analysis");
+
+  const isOpen = await checkMarketOpen();
+  if (!isOpen) {
+    logger.warn("Pre-check: market is closed (exchange_is_open=0)");
+    throw new MarketClosedError();
+  }
+
   try {
     const [candlesM5, candlesM15, candlesH1, candlesH4, tick] = await Promise.all([
       fetchCandles(GRANULARITY.M5, 100),
@@ -71,7 +78,12 @@ export async function runAnalysis(): Promise<Signal | null> {
     return signal;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.toLowerCase().includes("market") && msg.toLowerCase().includes("closed")) {
+    logger.warn({ derivError: msg }, "Deriv error detail");
+    if (
+      msg.toLowerCase().includes("market") && msg.toLowerCase().includes("closed") ||
+      msg.toLowerCase().includes("presently closed") ||
+      msg.toLowerCase().includes("trading is not available")
+    ) {
       logger.warn("Market is closed — skipping analysis");
       throw new MarketClosedError();
     }
