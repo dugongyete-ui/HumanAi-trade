@@ -1,7 +1,7 @@
 import cron from "node-cron";
 import { fetchCandles, fetchCurrentTick, checkMarketOpen, GRANULARITY } from "./deriv-client.js";
 import { buildTimeframeData } from "./indicators.js";
-import { analyzeMarket } from "./ai-agent.js";
+import { analyzeMarket, recordSignalResult as recordMemoryResult } from "./ai-agent.js";
 import { storeSignal, updateSignalResult, getSignals, getLastSignal, getTotalCount, getWinRate, type Signal } from "./signal-store.js";
 import { sendMessage, formatSignal, formatResult } from "./telegram.js";
 import { logger } from "./logger.js";
@@ -78,6 +78,7 @@ async function checkSignalOutcome(): Promise<void> {
 
     if (result) {
       updateSignalResult(signal.id, result, price);
+      recordMemoryResult(result, price);
       await sendMessage(formatResult(signal, result, price));
       logger.info({ result, exitPrice: price, signalId: signal.id }, `Signal ${result}`);
 

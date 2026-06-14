@@ -5,6 +5,8 @@ const AI_API_URL = process.env.AI_API_URL ?? "https://qwn-api--miok1qpgd.replit.
 const AI_API_KEY = process.env.AI_API_KEY ?? "";
 const AI_MODEL = process.env.AI_MODEL ?? "qwen3.7-max";
 
+// ─── System Prompt ─────────────────────────────────────────────────────────────
+
 const SYSTEM_PROMPT = `# SYSTEM PROMPT — ATLAS: XAUUSD AUTONOMOUS MARKET ANALYST
 
 ---
@@ -158,6 +160,8 @@ Catatan Output:
 - confluence_score adalah integer 0-10 yang merepresentasikan berapa banyak faktor/indikator yang selaras
 - Gunakan Bahasa Indonesia yang profesional, jelas, dan mudah dimengerti di semua field teks`;
 
+// ─── AI Signal Type ────────────────────────────────────────────────────────────
+
 export interface AISignal {
   decision: "BUY" | "SELL" | "WAIT";
   confidence: number;
@@ -181,6 +185,167 @@ export interface AISignal {
   invalidation: string;
 }
 
+// ─── Memory System ─────────────────────────────────────────────────────────────
+
+interface MemoryEntry {
+  timestamp: string;         // ISO
+  timeWib: string;           // human-readable WIB
+  decision: string;
+  confidence: number;
+  price: number;
+  market_phase: string;
+  bias: { H4: string; H1: string; M15: string };
+  confluence_score: number;
+  market_context: string;
+  entry_price: number | null;
+  take_profit: number | null;
+  stop_loss: number | null;
+  result?: "WIN" | "LOSS" | "ACTIVE" | "EXPIRED";
+  exit_price?: number;
+  exit_time?: string;
+}
+
+interface SessionStats {
+  wins: number;
+  losses: number;
+  totalSignals: number;       // BUY/SELL only
+  totalAnalyses: number;
+  waitCount: number;
+  lastMarketPhases: string[]; // last 5 phases
+  lastBiasH4: string[];       // last 5 H4 bias readings
+}
+
+const MAX_MEMORY = 20;
+const memory: MemoryEntry[] = [];
+const sessionStats: SessionStats = {
+  wins: 0,
+  losses: 0,
+  totalSignals: 0,
+  totalAnalyses: 0,
+  waitCount: 0,
+  lastMarketPhases: [],
+  lastBiasH4: [],
+};
+
+/** Called after every analysis cycle */
+export function recordAnalysis(signal: AISignal, price: number, timeWib: string): void {
+  sessionStats.totalAnalyses++;
+
+  if (signal.decision === "WAIT") {
+    sessionStats.waitCount++;
+  } else {
+    sessionStats.totalSignals++;
+  }
+
+  // Track rolling phase & bias
+  sessionStats.lastMarketPhases.push(signal.market_phase);
+  if (sessionStats.lastMarketPhases.length > 5) sessionStats.lastMarketPhases.shift();
+
+  sessionStats.lastBiasH4.push(signal.timeframe_bias.H4);
+  if (sessionStats.lastBiasH4.length > 5) sessionStats.lastBiasH4.shift();
+
+  const entry: MemoryEntry = {
+    timestamp: new Date().toISOString(),
+    timeWib,
+    decision: signal.decision,
+    confidence: signal.confidence,
+    price,
+    market_phase: signal.market_phase,
+    bias: { ...signal.timeframe_bias },
+    confluence_score: signal.confluence_score,
+    market_context: signal.market_context,
+    entry_price: signal.entry_price,
+    take_profit: signal.take_profit,
+    stop_loss: signal.stop_loss,
+    result: signal.decision !== "WAIT" ? "ACTIVE" : undefined,
+  };
+
+  memory.unshift(entry);
+  if (memory.length > MAX_MEMORY) memory.splice(MAX_MEMORY);
+}
+
+/** Called when TP/SL is hit */
+export function recordSignalResult(result: "WIN" | "LOSS", exitPrice: number): void {
+  if (result === "WIN") sessionStats.wins++;
+  else sessionStats.losses++;
+
+  // Mark the most recent non-WAIT signal as resolved
+  const active = memory.find(
+    (m) => m.decision !== "WAIT" && m.result === "ACTIVE"
+  );
+  if (active) {
+    active.result = result;
+    active.exit_price = exitPrice;
+    active.exit_time = new Date().toLocaleString("id-ID", {
+      timeZone: "Asia/Jakarta",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+}
+
+/** Build natural-language memory context injected into each AI call */
+function buildMemoryContext(): string {
+  if (memory.length === 0) return "";
+
+  const lines: string[] = [];
+  lines.push("## 🧠 MEMORI ATLAS — Konteks & Ingatan Siklus Sebelumnya\n");
+  lines.push("PENTING: Gunakan konteks di bawah ini untuk membuat analisis yang KONSISTEN dan EVOLUSIONER, bukan analisis yang mulai dari nol. Perhatikan apakah karakter pasar berubah, apakah bias sebelumnya terbukti benar, dan evaluasi keputusan lalu.\n");
+
+  // --- Session stats
+  const winRate = (sessionStats.wins + sessionStats.losses) > 0
+    ? Math.round(sessionStats.wins / (sessionStats.wins + sessionStats.losses) * 100)
+    : null;
+
+  lines.push("### 📊 Statistik Sesi Ini:");
+  lines.push(`- Total analisis: ${sessionStats.totalAnalyses} | Sinyal BUY/SELL: ${sessionStats.totalSignals} | WAIT: ${sessionStats.waitCount}`);
+  if (winRate !== null) {
+    lines.push(`- Hasil sinyal: ${sessionStats.wins} WIN / ${sessionStats.losses} LOSS → Win Rate: **${winRate}%**`);
+  }
+  if (sessionStats.lastMarketPhases.length > 0) {
+    lines.push(`- Fase pasar 5 siklus terakhir: ${sessionStats.lastMarketPhases.join(" → ")}`);
+  }
+  if (sessionStats.lastBiasH4.length > 0) {
+    lines.push(`- Bias H4 dominan: ${sessionStats.lastBiasH4.join(" → ")}`);
+  }
+
+  // --- Recent analyses
+  lines.push("\n### 🕐 Riwayat 10 Analisis Terakhir:");
+  const recent = memory.slice(0, 10);
+  recent.forEach((m, i) => {
+    const resultTag = m.result
+      ? m.result === "WIN" ? " → ✅ WIN" + (m.exit_price ? ` (exit $${m.exit_price.toFixed(2)})` : "")
+      : m.result === "LOSS" ? " → ❌ LOSS" + (m.exit_price ? ` (exit $${m.exit_price.toFixed(2)})` : "")
+      : m.result === "ACTIVE" ? " → ⏳ AKTIF (menunggu TP/SL)"
+      : ""
+      : "";
+    const biasStr = `H4:${m.bias.H4} H1:${m.bias.H1} M15:${m.bias.M15}`;
+    const confPct = Math.round(m.confidence * 100);
+    lines.push(
+      `${i + 1}. [${m.timeWib}] **${m.decision}** | $${m.price.toFixed(2)} | conf:${confPct}% | ${m.market_phase} | bias:${biasStr}${resultTag}`
+    );
+    if (m.decision !== "WAIT") {
+      lines.push(
+        `   Entry:$${m.entry_price?.toFixed(2) ?? "-"} TP:$${m.take_profit?.toFixed(2) ?? "-"} SL:$${m.stop_loss?.toFixed(2) ?? "-"}`
+      );
+    }
+    lines.push(`   "${m.market_context}"`);
+  });
+
+  // --- Reflection prompts
+  lines.push("\n### 🔎 Instruksi Refleksi Diri:");
+  lines.push("Sebelum membuat keputusan baru, jawab pertanyaan berikut secara internal (tercermin dalam 'reasoning'):");
+  lines.push("1. **Konsistensi**: Apakah kondisi pasar saat ini berubah signifikan dari siklus sebelumnya? Jika tidak — pertahankan narasi. Jika ya — jelaskan apa yang berubah.");
+  lines.push("2. **Evaluasi Sinyal Lalu**: Jika ada sinyal AKTIF — harga sudah bergerak ke mana? Mendekati TP atau SL?");
+  lines.push("3. **Pembelajaran LOSS**: Jika sinyal terakhir LOSS — identifikasi apa yang keliru. Apakah kondisi saat ini sudah lebih baik, atau masih ada kelemahan yang sama?");
+  lines.push("4. **Bias Drift**: Apakah bias H4 berubah arah dari analisis ke analisis? Perubahan bias yang konsisten menandakan perubahan tren yang sesungguhnya.");
+  lines.push("5. **Over-Trading Guard**: Jika sudah ≥3 WAIT berturut-turut, pertimbangkan — apakah ini memang kondisi sulit, atau ada setup yang terlewat?");
+
+  return lines.join("\n");
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function getTradingSession(): string {
   const utcHour = new Date().getUTCHours();
   if (utcHour >= 22 || utcHour < 7) return "Sydney/Tokyo (Asia) — 05:00–14:00 WIB";
@@ -189,6 +354,8 @@ function getTradingSession(): string {
   if (utcHour >= 16 && utcHour < 21) return "New York — 23:00–04:00 WIB";
   return "Off-hours / transisi sesi";
 }
+
+// ─── Main Analysis Function ────────────────────────────────────────────────────
 
 export async function analyzeMarket(timeframes: TimeframeData[], currentPrice: number): Promise<AISignal> {
   const now = new Date();
@@ -280,7 +447,12 @@ export async function analyzeMarket(timeframes: TimeframeData[], currentPrice: n
     })),
   };
 
-  const userMessage = `Analisis data pasar XAUUSD berikut dan berikan keputusan trading:\n\n${JSON.stringify(sensoryData, null, 2)}`;
+  // Build the full user message: memory context + current data
+  const memoryContext = buildMemoryContext();
+  const marketDataSection = `## 📡 DATA PASAR REAL-TIME SAAT INI\n\n${JSON.stringify(sensoryData, null, 2)}`;
+  const userMessage = memoryContext
+    ? `${memoryContext}\n\n---\n\n${marketDataSection}\n\n---\n\nBerdasarkan memori di atas dan data pasar terkini, berikan analisis dan keputusan trading Atlas sekarang:`
+    : `Analisis data pasar XAUUSD berikut dan berikan keputusan trading:\n\n${JSON.stringify(sensoryData, null, 2)}`;
 
   const response = await fetch(AI_API_URL, {
     method: "POST",
@@ -328,11 +500,25 @@ export async function analyzeMarket(timeframes: TimeframeData[], currentPrice: n
 
   parsed.confidence = Math.max(0, Math.min(1, parsed.confidence));
   parsed.confluence_score = Math.max(0, Math.min(10, parsed.confluence_score ?? 0));
-
   parsed.timeframe_bias ??= { H4: "NEUTRAL", H1: "NEUTRAL", M15: "NEUTRAL" };
   parsed.key_levels ??= { nearest_resistance: null, nearest_support: null };
   parsed.market_phase ??= "RANGING";
   parsed.invalidation ??= "-";
 
+  // Record to memory AFTER successful parse
+  recordAnalysis(parsed, currentPrice, wibTime);
+
+  logger.info(
+    { decision: parsed.decision, confidence: parsed.confidence, memoryEntries: memory.length },
+    "AI analysis complete (with memory context)"
+  );
+
   return parsed;
+}
+
+export function getMemorySnapshot() {
+  return {
+    entries: memory.slice(0, 10),
+    stats: { ...sessionStats },
+  };
 }
