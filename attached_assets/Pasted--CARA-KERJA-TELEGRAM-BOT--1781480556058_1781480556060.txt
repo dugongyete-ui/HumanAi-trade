@@ -1,0 +1,88 @@
+╔══════════════════════════════════════════════════════════════╗
+║         CARA KERJA TELEGRAM BOT + AUTOSCALE                  ║
+╚══════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PERBEDAAN MENDASAR: POLLING vs WEBHOOK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ❌ POLLING (tidak cocok untuk autoscale):
+  ─────────────────────────────────────────
+  Bot → Telegram: "Ada pesan baru gak?"
+  Bot → Telegram: "Ada pesan baru gak?"  ← loop terus tiap detik
+  Bot → Telegram: "Ada pesan baru gak?"
+  *** Butuh server SELALU nyala = tidak cocok autoscale ***
+
+  ✅ WEBHOOK (yang dipakai proyek ini):
+  ──────────────────────────────────────
+  User kirim pesan ke Telegram
+    │
+    ▼
+  Server Telegram → POST https://your-app.replit.app/api/telegram
+    │                    (Telegram yang aktif push ke server kita)
+    ▼
+  Server kita terima → proses → balas
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  STEP BY STEP: SETUP AGAR BOT BISA MERESPON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  STEP 1 — Pastikan app sudah di-deploy (sudah ✅)
+  ─────────────────────────────────────────────────
+  URL production contoh: https://chat-gateway.replit.app
+
+  STEP 2 — Set BASE_URL di environment variable
+  ──────────────────────────────────────────────
+  Di .replit bagian [userenv.shared], tambahkan:
+
+    BASE_URL = "https://your-app.replit.app"
+
+  (Tanpa trailing slash. Ganti dengan URL replit.app kamu)
+
+  STEP 3 — Daftarkan webhook ke Telegram (1x saja)
+  ─────────────────────────────────────────────────
+  Buka browser, akses URL ini:
+
+    https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://your-app.replit.app/api/telegram/webhook
+
+  Ganti <TOKEN> dengan TELEGRAM_BOT_TOKEN kamu.
+  Response yang benar:
+    {"ok":true,"result":true,"description":"Webhook was set"}
+
+  STEP 4 — Verifikasi webhook terdaftar
+  ──────────────────────────────────────
+  Akses:
+    https://api.telegram.org/bot<TOKEN>/getWebhookInfo
+
+  Pastikan "url" field terisi dan "pending_update_count" = 0.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  KENAPA BISA MERESPON DI AUTOSCALE?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. User kirim pesan ke bot Telegram
+  2. Telegram nyimpan pesan itu
+  3. Telegram POST ke webhook URL kita (server dibangunkan autoscale)
+  4. Autoscale spin-up server dalam <1 detik
+  5. Server proses pesan → panggil AI provider → balas Telegram
+  6. Autoscale bisa spin-down lagi setelah idle
+
+  *** Telegram menunggu response HTTP 200 dalam 60 detik ***
+  *** Kalau timeout, Telegram retry otomatis sampai 3x   ***
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CATATAN PENTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - bx-umidtoken pool (2000 token) di-fetch ULANG setiap server
+    cold-start. Butuh ~20 detik. Pesan pertama setelah idle
+    mungkin lambat karena cold-start ini.
+
+  - Autoscale TIDAK cocok untuk fitur streaming Telegram
+    (kirim karakter per karakter). Hanya cocok untuk
+    send-once setelah AI selesai jawab.
+
+  - Jika bot tidak merespon setelah deploy ulang, cek:
+    1. BASE_URL sudah di-set?
+    2. Webhook sudah didaftarkan ulang?
+    3. Log deployment ada error?
