@@ -1,67 +1,121 @@
-# XAUUSD AI Trading Bot
+# XAUUSD AI Trading Bot — Atlas
 
-Bot Telegram AI otonom yang menganalisis pasar emas (XAUUSD) menggunakan multi-timeframe technical analysis dan LLM AI, lalu mengirimkan sinyal BUY/SELL ke Telegram secara otomatis setiap 15 menit.
+Bot Telegram AI **otonom** yang menganalisis pasar emas (XAUUSD) menggunakan multi-timeframe technical analysis, memori AI antar siklus, dan kalender ekonomi real-time. Mengirim sinyal BUY/SELL ke Telegram otomatis setiap 1 menit, monitor TP/SL real-time, kirim notif WIN/LOSS otomatis.
+
+## 📚 Dokumentasi Lengkap
+
+Baca docs ini sebelum melanjutkan development:
+
+- `docs/ARCHITECTURE.md` — Struktur monorepo, stack, routing, env vars, API endpoints
+- `docs/BOT_LOGIC.md` — State machine ANALYZING/MONITORING, indikator, Deriv client, alur lengkap
+- `docs/AI_MEMORY.md` — Sistem memori AI (cara AI "ingat" siklus sebelumnya), format konteks
+- `docs/SIGNALS.md` — Format sinyal, alur TP/SL, format pesan Telegram WIN/LOSS, API response
+- `docs/DEVELOPMENT.md` — Setup dari nol, cara extend bot, common pitfalls, cara deploy
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
-- `pnpm --filter @workspace/dashboard run dev` — run the dashboard (port 23183)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
+```bash
+bash install.sh                                         # setup sekali dari nol
+pnpm --filter @workspace/api-server run dev             # API server + bot (port 8080)
+pnpm --filter @workspace/dashboard run dev              # Dashboard web (port 23183)
+pnpm run typecheck                                      # full typecheck semua packages
+pnpm --filter @workspace/api-spec run codegen           # regenerate API hooks dari OpenAPI spec
+```
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
+- API: Express 5, Logger: Pino
 - Data: Deriv WebSocket API (frxXAUUSD)
-- AI: Custom LLM endpoint (qwen3.7-max via qwn-api)
+- AI: Custom LLM endpoint (qwen3.7-max via qwn-api) + in-memory AI memory system
 - Telegram: node-telegram-bot-api (polling mode)
-- Scheduler: node-cron (every 15 minutes)
+- Scheduler: node-cron (`*/1 * * * *` — setiap 1 menit)
+- Monitor: setInterval 10 detik (cek TP/SL saat MONITORING mode)
+- Kalender: ForexFactory public JSON (gratis, tanpa API key)
 - Frontend: React + Vite + shadcn/ui + Tailwind CSS
 - Validation: Zod (zod/v4), drizzle-zod
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- API codegen: Orval (dari OpenAPI spec)
+- Build: esbuild (CJS bundle ke `dist/index.mjs`)
+- MCP: Python MCP server untuk time & forex session awareness
 
-## Where things live
+## File-file Kunci
 
-- `artifacts/api-server/src/lib/deriv-client.ts` — Deriv WebSocket client, candle + tick fetching
-- `artifacts/api-server/src/lib/indicators.ts` — Technical indicators (RSI, MACD, EMA, BB, ATR, Stochastic, patterns, market structure)
-- `artifacts/api-server/src/lib/ai-agent.ts` — AI analysis, builds sensory data package, calls LLM
-- `artifacts/api-server/src/lib/telegram.ts` — Telegram bot init, signal formatting, command handlers
-- `artifacts/api-server/src/lib/signal-store.ts` — In-memory signal history (last 100 signals)
-- `artifacts/api-server/src/lib/scheduler.ts` — Agentic loop (cron every 15 min), bot state
-- `artifacts/dashboard/src/` — React dashboard (dark theme, gold accents)
-- `lib/api-spec/openapi.yaml` — API contract source of truth
+```
+artifacts/api-server/src/lib/
+├── scheduler.ts       ← State machine ANALYZING/MONITORING, cron, monitor TP/SL
+├── ai-agent.ts        ← LLM call, memori AI, prompt building (memori + kalender + pasar)
+├── indicators.ts      ← 10+ indikator teknikal (EMA, RSI, MACD, BB, ATR, Stoch, Ichimoku, Fib, WilliamsR, CCI)
+├── deriv-client.ts    ← Deriv WebSocket, fetch candle M5/M15/H1/H4 + tick
+├── telegram.ts        ← Bot init, formatSignal, formatResult, command handlers
+├── signal-store.ts    ← In-memory signals (max 100), win rate
+├── news-calendar.ts   ← ForexFactory calendar, 3 alert levels (CLEAR/CAUTION/HIGH_ALERT)
+└── logger.ts          ← Pino structured logger
 
-## Architecture decisions
+artifacts/dashboard/src/pages/dashboard.tsx   ← Dashboard utama
+lib/api-spec/openapi.yaml                     ← API contract (source of truth)
+mcp-servers/time/server.py                    ← Python MCP time server
+install.sh                                    ← One-shot installer
+```
 
-- **Market closed handling**: Deriv returns error when gold market is closed (weekends/holidays). Bot logs the error and retries on next scheduled cycle — this is expected behavior.
-- **Confidence threshold**: Only signals with confidence >= 60% are sent to Telegram. WAIT decisions are never sent.
-- **Multi-timeframe**: M5, M15, H1, H4 candles fetched simultaneously for holistic analysis.
-- **In-memory signals**: Signal history kept in RAM (max 100). On server restart, history resets. No DB needed for MVP.
-- **Polling mode**: Telegram bot uses polling (not webhook) — simpler for Replit deployment.
+## Bot State Machine
 
-## Product
+```
+ANALYZING  →  analisis setiap 1 menit
+               BUY/SELL conf≥60%? → kirim sinyal → masuk MONITORING
+               WAIT / conf<60%   → tetap ANALYZING
 
-- Autonomous XAUUSD trading signal bot
-- AI analyzes 4 timeframes of technical indicators + candlestick patterns
-- Sends formatted BUY/SELL signals to Telegram with entry/TP/SL/reasoning
-- Web dashboard for monitoring bot status, live price, signal history
-- Telegram commands: /start, /analyze, /status, /pause, /resume
+MONITORING →  cek harga tiap 10 detik
+               TP hit → WIN → notif Telegram → kembali ANALYZING
+               SL hit → LOSS → notif Telegram → kembali ANALYZING
+```
 
-## User preferences
+## AI Memory (per siklus)
 
-- AI provider: Custom endpoint https://qwn-api--miok1qpgd.replit.app/v1/chat/completions (model: qwen3.7-max)
-- Language: Bahasa Indonesia for all user-facing content
-- Secrets stored as env vars (not Replit secrets)
+AI menerima sebelum analisis:
+1. **Statistik sesi**: total analisis, win/loss rate, bias H4 dominan 5 siklus
+2. **Riwayat 10 siklus**: keputusan, harga, confidence, hasil WIN/LOSS
+3. **Kalender ekonomi**: event high-impact hari ini + alert level
+4. **Data pasar real-time**: 4 timeframe + 10+ indikator
+
+## Architecture Decisions
+
+- **Analisis 1 menit**: cron `*/1 * * * *` — lebih responsif dari 15 menit
+- **State machine**: ANALYZING ↔ MONITORING — tidak analisis saat ada sinyal aktif
+- **Market closed**: Deriv XAUUSD tutup weekend — bot skip siklus, log WARN, retry menit berikutnya. NORMAL.
+- **Confidence threshold**: 60% minimum untuk kirim sinyal ke Telegram
+- **In-memory**: Sinyal (max 100) + memori AI (max 20 siklus) di RAM — reset saat restart
+- **Polling mode**: Telegram bot polling (bukan webhook) — cocok karena server always-on
+- **Calendar cache**: ForexFactory di-cache 1 jam, market status 3 menit
+
+## Environment Variables (Replit Secrets)
+
+| Variable | Wajib | Keterangan |
+|---|---|---|
+| `TELEGRAM_BOT_TOKEN` | ✅ | Token dari @BotFather |
+| `TELEGRAM_CHAT_ID` | ✅ | Chat ID tujuan sinyal |
+| `AI_API_KEY` | ✅ | Bearer key untuk LLM endpoint |
+| `AI_API_URL` | ❌ | Default: qwn-api endpoint |
+| `AI_MODEL` | ❌ | Default: qwen3.7-max |
+
+## Telegram Commands
+
+- `/start` / `/help` — daftar perintah
+- `/analyze` — trigger analisis manual
+- `/status` — mode bot, sinyal aktif, win rate, next analysis
+- `/pause` — jeda analisis otomatis
+- `/resume` — lanjutkan analisis otomatis
 
 ## Gotchas
 
-- Gold market is closed weekends and some holidays — Deriv returns "This market is presently closed" error, which is NORMAL.
-- `DATABASE_URL` is referenced in `@workspace/db` but not used by the bot — the db lib throws if no DATABASE_URL is set, but the api-server imports it through `@workspace/api-zod`. If this causes issues, DATABASE_URL can be provisioned via the database skill.
-- node-telegram-bot-api polling requires the bot token to be valid. If Telegram errors appear, check TELEGRAM_BOT_TOKEN env var.
+- `market is closed` log setiap menit weekend = **NORMAL**, bukan error
+- `DATABASE_URL` dibutuhkan `@workspace/db` — tidak dipakai aktif tapi di-import transitif
+- Replit free tier: server tidur setelah ~10 menit idle → setup UptimeRobot ping `/api/healthz` setiap 5 menit
+- Memori AI & sinyal reset saat server restart (in-memory)
+- Jangan akses port langsung (8080, 23183) — gunakan `localhost:80/api/...`
 
-## Pointers
+## User Preferences
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- AI provider: Custom endpoint `https://qwn-api--miok1qpgd.replit.app/v1/chat/completions` (model: qwen3.7-max)
+- Bahasa Indonesia untuk semua konten user-facing
+- Secrets di Replit Secrets (bukan file .env)
+- Analisis setiap 1 menit (bukan 15 menit)
