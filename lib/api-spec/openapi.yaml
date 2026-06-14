@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: bot
+    description: Bot control operations
+  - name: signals
+    description: Trading signals
+  - name: market
+    description: Market data
 paths:
   /healthz:
     get:
@@ -24,6 +30,86 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /bot/status:
+    get:
+      operationId: getBotStatus
+      tags: [bot]
+      summary: Get bot status
+      responses:
+        "200":
+          description: Bot status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BotStatus"
+  /bot/start:
+    post:
+      operationId: startBot
+      tags: [bot]
+      summary: Start the bot
+      responses:
+        "200":
+          description: Bot started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BotStatus"
+  /bot/stop:
+    post:
+      operationId: stopBot
+      tags: [bot]
+      summary: Stop the bot
+      responses:
+        "200":
+          description: Bot stopped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BotStatus"
+  /bot/analyze:
+    post:
+      operationId: triggerAnalysis
+      tags: [bot]
+      summary: Trigger manual analysis
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Signal"
+  /signals:
+    get:
+      operationId: getSignals
+      tags: [signals]
+      summary: Get trading signals history
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of signals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Signal"
+  /market/current:
+    get:
+      operationId: getCurrentMarket
+      tags: [market]
+      summary: Get current XAUUSD market data
+      responses:
+        "200":
+          description: Current market data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketData"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +119,102 @@ components:
           type: string
       required:
         - status
-
+    BotStatus:
+      type: object
+      properties:
+        running:
+          type: boolean
+        lastAnalysis:
+          type: string
+          nullable: true
+        totalSignals:
+          type: integer
+        lastSignal:
+          $ref: "#/components/schemas/Signal"
+          nullable: true
+        nextAnalysisIn:
+          type: integer
+          nullable: true
+          description: Seconds until next scheduled analysis
+      required:
+        - running
+        - totalSignals
+    Signal:
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+        decision:
+          type: string
+          enum: [BUY, SELL, WAIT]
+        confidence:
+          type: number
+        entry_price:
+          type: number
+          nullable: true
+        take_profit:
+          type: number
+          nullable: true
+        stop_loss:
+          type: number
+          nullable: true
+        reasoning:
+          type: string
+        market_context:
+          type: string
+        current_price:
+          type: number
+      required:
+        - id
+        - timestamp
+        - decision
+        - confidence
+        - reasoning
+        - market_context
+        - current_price
+    MarketData:
+      type: object
+      properties:
+        symbol:
+          type: string
+        current_price:
+          type: number
+        bid:
+          type: number
+        ask:
+          type: number
+        timestamp:
+          type: string
+        candles_m15:
+          type: array
+          items:
+            $ref: "#/components/schemas/Candle"
+        candles_h1:
+          type: array
+          items:
+            $ref: "#/components/schemas/Candle"
+      required:
+        - symbol
+        - current_price
+        - timestamp
+    Candle:
+      type: object
+      properties:
+        open:
+          type: number
+        high:
+          type: number
+        low:
+          type: number
+        close:
+          type: number
+        epoch:
+          type: integer
+      required:
+        - open
+        - high
+        - low
+        - close
+        - epoch

@@ -26,3 +26,16 @@ externalPort = 8080
 [[ports]]
 localPort = 8081
 externalPort = 80
+
+[[ports]]
+localPort = 23183
+externalPort = 3001
+
+[userenv]
+
+[userenv.shared]
+TELEGRAM_BOT_TOKEN = "8510629348:AAFjL9UJDu_PkB7gD9V0wjE-_oOhFkNK5CA"
+TELEGRAM_CHAT_ID = "7390867903"
+AI_API_KEY = "sk-dzeck-1ee392d1f9ff4d317c6a4c311e84efa0he"
+AI_API_URL = "https://qwn-api--miok1qpgd.replit.app/v1/chat/completions"
+AI_MODEL = "qwen3.7-max"

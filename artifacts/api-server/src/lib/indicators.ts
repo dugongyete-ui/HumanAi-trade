@@ -1,0 +1,346 @@
+import type { Candle } from "./deriv-client.js";
+
+// ─── Core Calculations ────────────────────────────────────────────────────────
+
+export function sma(values: number[], period: number): number[] {
+  const result: number[] = [];
+  for (let i = period - 1; i < values.length; i++) {
+    const slice = values.slice(i - period + 1, i + 1);
+    result.push(slice.reduce((a, b) => a + b, 0) / period);
+  }
+  return result;
+}
+
+export function ema(values: number[], period: number): number[] {
+  const k = 2 / (period + 1);
+  const result: number[] = [];
+  let prev = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  result.push(prev);
+  for (let i = period; i < values.length; i++) {
+    prev = values[i] * k + prev * (1 - k);
+    result.push(prev);
+  }
+  return result;
+}
+
+export function rsi(closes: number[], period = 14): number[] {
+  const result: number[] = [];
+  const gains: number[] = [];
+  const losses: number[] = [];
+
+  for (let i = 1; i < closes.length; i++) {
+    const diff = closes[i] - closes[i - 1];
+    gains.push(diff > 0 ? diff : 0);
+    losses.push(diff < 0 ? -diff : 0);
+  }
+
+  if (gains.length < period) return result;
+
+  let avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  let avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  result.push(avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss));
+
+  for (let i = period; i < gains.length; i++) {
+    avgGain = (avgGain * (period - 1) + gains[i]) / period;
+    avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
+    result.push(avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss));
+  }
+
+  return result;
+}
+
+export interface MACDResult {
+  macd: number;
+  signal: number;
+  histogram: number;
+}
+
+export function macd(closes: number[], fast = 12, slow = 26, signalPeriod = 9): MACDResult[] {
+  if (closes.length < slow + signalPeriod) return [];
+  const fastEma = ema(closes, fast);
+  const slowEma = ema(closes, slow);
+  const offset = slow - fast;
+  const macdLine = slowEma.map((v, i) => fastEma[i + offset] - v);
+  const signalLine = ema(macdLine, signalPeriod);
+  const signalOffset = macdLine.length - signalLine.length;
+  return signalLine.map((s, i) => ({
+    macd: macdLine[i + signalOffset],
+    signal: s,
+    histogram: macdLine[i + signalOffset] - s,
+  }));
+}
+
+export interface BollingerBand {
+  upper: number;
+  middle: number;
+  lower: number;
+  bandwidth: number;
+}
+
+export function bollingerBands(closes: number[], period = 20, multiplier = 2): BollingerBand[] {
+  const result: BollingerBand[] = [];
+  for (let i = period - 1; i < closes.length; i++) {
+    const slice = closes.slice(i - period + 1, i + 1);
+    const mean = slice.reduce((a, b) => a + b, 0) / period;
+    const variance = slice.reduce((a, b) => a + (b - mean) ** 2, 0) / period;
+    const std = Math.sqrt(variance);
+    const upper = mean + multiplier * std;
+    const lower = mean - multiplier * std;
+    result.push({ upper, middle: mean, lower, bandwidth: (upper - lower) / mean });
+  }
+  return result;
+}
+
+export function atr(candles: Candle[], period = 14): number[] {
+  const trs: number[] = [];
+  for (let i = 1; i < candles.length; i++) {
+    const hl = candles[i].high - candles[i].low;
+    const hc = Math.abs(candles[i].high - candles[i - 1].close);
+    const lc = Math.abs(candles[i].low - candles[i - 1].close);
+    trs.push(Math.max(hl, hc, lc));
+  }
+  const result: number[] = [];
+  let avg = trs.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  result.push(avg);
+  for (let i = period; i < trs.length; i++) {
+    avg = (avg * (period - 1) + trs[i]) / period;
+    result.push(avg);
+  }
+  return result;
+}
+
+export interface StochasticResult {
+  k: number;
+  d: number;
+}
+
+export function stochastic(candles: Candle[], period = 14, smoothK = 3, smoothD = 3): StochasticResult[] {
+  const rawK: number[] = [];
+  for (let i = period - 1; i < candles.length; i++) {
+    const slice = candles.slice(i - period + 1, i + 1);
+    const lowest = Math.min(...slice.map((c) => c.low));
+    const highest = Math.max(...slice.map((c) => c.high));
+    const range = highest - lowest;
+    rawK.push(range === 0 ? 50 : ((candles[i].close - lowest) / range) * 100);
+  }
+  const smoothedK = sma(rawK, smoothK);
+  const smoothedD = sma(smoothedK, smoothD);
+  const offset = smoothedK.length - smoothedD.length;
+  return smoothedD.map((d, i) => ({ k: smoothedK[i + offset], d }));
+}
+
+// ─── Pattern Detection ────────────────────────────────────────────────────────
+
+export interface CandlePattern {
+  name: string;
+  type: "bullish" | "bearish" | "neutral";
+}
+
+export function detectPatterns(candles: Candle[]): CandlePattern[] {
+  if (candles.length < 3) return [];
+  const patterns: CandlePattern[] = [];
+  const c = candles[candles.length - 1];
+  const prev = candles[candles.length - 2];
+  const body = Math.abs(c.close - c.open);
+  const range = c.high - c.low;
+  const upperWick = c.high - Math.max(c.open, c.close);
+  const lowerWick = Math.min(c.open, c.close) - c.low;
+
+  if (range > 0) {
+    if (body / range < 0.1) {
+      patterns.push({ name: "Doji", type: "neutral" });
+    }
+    if (lowerWick > body * 2 && upperWick < body * 0.5 && c.close > c.open) {
+      patterns.push({ name: "Hammer", type: "bullish" });
+    }
+    if (upperWick > body * 2 && lowerWick < body * 0.5 && c.close < c.open) {
+      patterns.push({ name: "Shooting Star", type: "bearish" });
+    }
+  }
+
+  const prevBody = Math.abs(prev.close - prev.open);
+  if (prevBody > 0) {
+    if (prev.close < prev.open && c.close > c.open && c.open < prev.close && c.close > prev.open) {
+      patterns.push({ name: "Bullish Engulfing", type: "bullish" });
+    }
+    if (prev.close > prev.open && c.close < c.open && c.open > prev.close && c.close < prev.open) {
+      patterns.push({ name: "Bearish Engulfing", type: "bearish" });
+    }
+  }
+
+  return patterns;
+}
+
+// ─── Market Structure ─────────────────────────────────────────────────────────
+
+export interface MarketStructure {
+  trend: "uptrend" | "downtrend" | "sideways";
+  swingHighs: number[];
+  swingLows: number[];
+  supportLevels: number[];
+  resistanceLevels: number[];
+}
+
+export function analyzeStructure(candles: Candle[]): MarketStructure {
+  const swingHighs: number[] = [];
+  const swingLows: number[] = [];
+
+  for (let i = 2; i < candles.length - 2; i++) {
+    if (
+      candles[i].high > candles[i - 1].high &&
+      candles[i].high > candles[i - 2].high &&
+      candles[i].high > candles[i + 1].high &&
+      candles[i].high > candles[i + 2].high
+    ) {
+      swingHighs.push(candles[i].high);
+    }
+    if (
+      candles[i].low < candles[i - 1].low &&
+      candles[i].low < candles[i - 2].low &&
+      candles[i].low < candles[i + 1].low &&
+      candles[i].low < candles[i + 2].low
+    ) {
+      swingLows.push(candles[i].low);
+    }
+  }
+
+  let trend: "uptrend" | "downtrend" | "sideways" = "sideways";
+  if (swingHighs.length >= 2 && swingLows.length >= 2) {
+    const lastTwoHighs = swingHighs.slice(-2);
+    const lastTwoLows = swingLows.slice(-2);
+    if (lastTwoHighs[1] > lastTwoHighs[0] && lastTwoLows[1] > lastTwoLows[0]) {
+      trend = "uptrend";
+    } else if (lastTwoHighs[1] < lastTwoHighs[0] && lastTwoLows[1] < lastTwoLows[0]) {
+      trend = "downtrend";
+    }
+  }
+
+  const supportLevels = swingLows.slice(-3);
+  const resistanceLevels = swingHighs.slice(-3);
+
+  return { trend, swingHighs, swingLows, supportLevels, resistanceLevels };
+}
+
+// ─── Full Sensory Data Builder ────────────────────────────────────────────────
+
+export interface TimeframeData {
+  timeframe: string;
+  candle_count: number;
+  current_price: number;
+  ohlc_last: { open: number; high: number; low: number; close: number };
+  ema_20: number | null;
+  ema_50: number | null;
+  ema_200: number | null;
+  rsi_14: number | null;
+  rsi_condition: string;
+  macd: MACDResult | null;
+  macd_signal: string;
+  bollinger: BollingerBand | null;
+  bb_position: string;
+  atr_14: number | null;
+  stochastic: StochasticResult | null;
+  stoch_condition: string;
+  trend: string;
+  patterns: CandlePattern[];
+  support_levels: number[];
+  resistance_levels: number[];
+}
+
+export function buildTimeframeData(label: string, candles: Candle[]): TimeframeData {
+  if (candles.length < 5) {
+    return {
+      timeframe: label,
+      candle_count: candles.length,
+      current_price: candles[candles.length - 1]?.close ?? 0,
+      ohlc_last: { open: 0, high: 0, low: 0, close: 0 },
+      ema_20: null,
+      ema_50: null,
+      ema_200: null,
+      rsi_14: null,
+      rsi_condition: "N/A",
+      macd: null,
+      macd_signal: "N/A",
+      bollinger: null,
+      bb_position: "N/A",
+      atr_14: null,
+      stochastic: null,
+      stoch_condition: "N/A",
+      trend: "N/A",
+      patterns: [],
+      support_levels: [],
+      resistance_levels: [],
+    };
+  }
+
+  const closes = candles.map((c) => c.close);
+  const last = candles[candles.length - 1];
+
+  const emaValues20 = ema(closes, 20);
+  const emaValues50 = ema(closes, 50);
+  const emaValues200 = ema(closes, 200);
+  const rsiValues = rsi(closes, 14);
+  const macdValues = macd(closes);
+  const bbValues = bollingerBands(closes, 20, 2);
+  const atrValues = atr(candles, 14);
+  const stochValues = stochastic(candles, 14, 3, 3);
+  const structure = analyzeStructure(candles);
+  const patterns = detectPatterns(candles);
+
+  const lastRsi = rsiValues.at(-1) ?? null;
+  const lastMacd = macdValues.at(-1) ?? null;
+  const lastBb = bbValues.at(-1) ?? null;
+  const lastStoch = stochValues.at(-1) ?? null;
+
+  const rsiCondition = lastRsi
+    ? lastRsi > 70
+      ? "Overbought"
+      : lastRsi < 30
+        ? "Oversold"
+        : "Neutral"
+    : "N/A";
+
+  const macdSignal = lastMacd
+    ? lastMacd.histogram > 0
+      ? "Bullish (histogram positive)"
+      : "Bearish (histogram negative)"
+    : "N/A";
+
+  let bbPosition = "N/A";
+  if (lastBb) {
+    if (last.close > lastBb.upper) bbPosition = "Above upper band (overbought)";
+    else if (last.close < lastBb.lower) bbPosition = "Below lower band (oversold)";
+    else if (last.close > lastBb.middle) bbPosition = "Upper half (above middle)";
+    else bbPosition = "Lower half (below middle)";
+  }
+
+  const stochCondition = lastStoch
+    ? lastStoch.k > 80
+      ? "Overbought"
+      : lastStoch.k < 20
+        ? "Oversold"
+        : "Neutral"
+    : "N/A";
+
+  return {
+    timeframe: label,
+    candle_count: candles.length,
+    current_price: last.close,
+    ohlc_last: { open: last.open, high: last.high, low: last.low, close: last.close },
+    ema_20: emaValues20.at(-1) ?? null,
+    ema_50: emaValues50.at(-1) ?? null,
+    ema_200: emaValues200.at(-1) ?? null,
+    rsi_14: lastRsi,
+    rsi_condition: rsiCondition,
+    macd: lastMacd,
+    macd_signal: macdSignal,
+    bollinger: lastBb,
+    bb_position: bbPosition,
+    atr_14: atrValues.at(-1) ?? null,
+    stochastic: lastStoch,
+    stoch_condition: stochCondition,
+    trend: structure.trend,
+    patterns,
+    support_levels: structure.supportLevels,
+    resistance_levels: structure.resistanceLevels,
+  };
+}
