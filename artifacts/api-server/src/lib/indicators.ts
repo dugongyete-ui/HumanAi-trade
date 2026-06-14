@@ -129,6 +129,153 @@ export function stochastic(candles: Candle[], period = 14, smoothK = 3, smoothD 
   return smoothedD.map((d, i) => ({ k: smoothedK[i + offset], d }));
 }
 
+// ─── New Indicators ───────────────────────────────────────────────────────────
+
+export interface IchimokuResult {
+  tenkan: number | null;
+  kijun: number | null;
+  senkou_a: number | null;
+  senkou_b: number | null;
+  chikou: number | null;
+  cloud_color: "bullish" | "bearish" | "neutral";
+  price_vs_cloud: "above" | "below" | "inside";
+  tenkan_kijun_cross: "bullish" | "bearish" | "neutral";
+}
+
+export function ichimoku(candles: Candle[]): IchimokuResult | null {
+  if (candles.length < 52) return null;
+
+  const donchianMid = (c: Candle[], from: number, len: number): number => {
+    const slice = c.slice(from, from + len);
+    return (Math.max(...slice.map((x) => x.high)) + Math.min(...slice.map((x) => x.low))) / 2;
+  };
+
+  const n = candles.length;
+  const tenkan = donchianMid(candles, n - 9, 9);
+  const kijun = donchianMid(candles, n - 26, 26);
+  const senkouA = (tenkan + kijun) / 2;
+  const senkouB = donchianMid(candles, n - 52, 52);
+  const chikou = candles[n - 1].close;
+  const currentClose = candles[n - 1].close;
+
+  const cloudTop = Math.max(senkouA, senkouB);
+  const cloudBottom = Math.min(senkouA, senkouB);
+
+  const cloudColor: "bullish" | "bearish" | "neutral" =
+    senkouA > senkouB ? "bullish" : senkouA < senkouB ? "bearish" : "neutral";
+
+  const priceVsCloud: "above" | "below" | "inside" =
+    currentClose > cloudTop ? "above" : currentClose < cloudBottom ? "below" : "inside";
+
+  const tenkanKijunCross: "bullish" | "bearish" | "neutral" =
+    tenkan > kijun ? "bullish" : tenkan < kijun ? "bearish" : "neutral";
+
+  return {
+    tenkan,
+    kijun,
+    senkou_a: senkouA,
+    senkou_b: senkouB,
+    chikou,
+    cloud_color: cloudColor,
+    price_vs_cloud: priceVsCloud,
+    tenkan_kijun_cross: tenkanKijunCross,
+  };
+}
+
+export interface FibonacciLevels {
+  swing_high: number;
+  swing_low: number;
+  trend: "up" | "down";
+  level_0: number;
+  level_236: number;
+  level_382: number;
+  level_500: number;
+  level_618: number;
+  level_786: number;
+  level_1000: number;
+  nearest_level: string;
+  price_zone: string;
+}
+
+export function fibonacciRetracement(candles: Candle[]): FibonacciLevels | null {
+  if (candles.length < 20) return null;
+
+  const recent = candles.slice(-50);
+  const swingHigh = Math.max(...recent.map((c) => c.high));
+  const swingLow = Math.min(...recent.map((c) => c.low));
+  const range = swingHigh - swingLow;
+  if (range === 0) return null;
+
+  const currentClose = candles[candles.length - 1].close;
+  const highIdx = recent.findIndex((c) => c.high === swingHigh);
+  const lowIdx = recent.findIndex((c) => c.low === swingLow);
+  const trend: "up" | "down" = highIdx > lowIdx ? "down" : "up";
+
+  const ratios = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0];
+  const levels = ratios.map((r) =>
+    trend === "up" ? swingHigh - r * range : swingLow + r * range
+  );
+
+  let nearestLabel = "0%";
+  let minDist = Infinity;
+  const labels = ["0%", "23.6%", "38.2%", "50%", "61.8%", "78.6%", "100%"];
+  levels.forEach((lvl, i) => {
+    const dist = Math.abs(currentClose - lvl);
+    if (dist < minDist) { minDist = dist; nearestLabel = labels[i]; }
+  });
+
+  const pct = trend === "up"
+    ? (swingHigh - currentClose) / range
+    : (currentClose - swingLow) / range;
+
+  let priceZone = "Extended";
+  if (pct <= 0.236) priceZone = "Strong trend zone (0–23.6%)";
+  else if (pct <= 0.382) priceZone = "Shallow retracement (23.6–38.2%)";
+  else if (pct <= 0.5) priceZone = "Moderate retracement (38.2–50%)";
+  else if (pct <= 0.618) priceZone = "Golden zone (50–61.8%)";
+  else if (pct <= 0.786) priceZone = "Deep retracement (61.8–78.6%)";
+  else priceZone = "Near full retracement (>78.6%)";
+
+  return {
+    swing_high: swingHigh,
+    swing_low: swingLow,
+    trend,
+    level_0: levels[0],
+    level_236: levels[1],
+    level_382: levels[2],
+    level_500: levels[3],
+    level_618: levels[4],
+    level_786: levels[5],
+    level_1000: levels[6],
+    nearest_level: nearestLabel,
+    price_zone: priceZone,
+  };
+}
+
+export function williamsR(candles: Candle[], period = 14): number[] {
+  const result: number[] = [];
+  for (let i = period - 1; i < candles.length; i++) {
+    const slice = candles.slice(i - period + 1, i + 1);
+    const highest = Math.max(...slice.map((c) => c.high));
+    const lowest = Math.min(...slice.map((c) => c.low));
+    const range = highest - lowest;
+    result.push(range === 0 ? -50 : ((highest - candles[i].close) / range) * -100);
+  }
+  return result;
+}
+
+export function cci(candles: Candle[], period = 20): number[] {
+  const result: number[] = [];
+  for (let i = period - 1; i < candles.length; i++) {
+    const slice = candles.slice(i - period + 1, i + 1);
+    const typicalPrices = slice.map((c) => (c.high + c.low + c.close) / 3);
+    const meanTP = typicalPrices.reduce((a, b) => a + b, 0) / period;
+    const meanDev = typicalPrices.reduce((a, b) => a + Math.abs(b - meanTP), 0) / period;
+    result.push(meanDev === 0 ? 0 : (typicalPrices[typicalPrices.length - 1] - meanTP) / (0.015 * meanDev));
+  }
+  return result;
+}
+
 // ─── Pattern Detection ────────────────────────────────────────────────────────
 
 export interface CandlePattern {
@@ -240,6 +387,12 @@ export interface TimeframeData {
   atr_14: number | null;
   stochastic: StochasticResult | null;
   stoch_condition: string;
+  ichimoku: IchimokuResult | null;
+  fibonacci: FibonacciLevels | null;
+  williams_r: number | null;
+  williams_r_condition: string;
+  cci_20: number | null;
+  cci_condition: string;
   trend: string;
   patterns: CandlePattern[];
   support_levels: number[];
@@ -247,30 +400,28 @@ export interface TimeframeData {
 }
 
 export function buildTimeframeData(label: string, candles: Candle[]): TimeframeData {
-  if (candles.length < 5) {
-    return {
-      timeframe: label,
-      candle_count: candles.length,
-      current_price: candles[candles.length - 1]?.close ?? 0,
-      ohlc_last: { open: 0, high: 0, low: 0, close: 0 },
-      ema_20: null,
-      ema_50: null,
-      ema_200: null,
-      rsi_14: null,
-      rsi_condition: "N/A",
-      macd: null,
-      macd_signal: "N/A",
-      bollinger: null,
-      bb_position: "N/A",
-      atr_14: null,
-      stochastic: null,
-      stoch_condition: "N/A",
-      trend: "N/A",
-      patterns: [],
-      support_levels: [],
-      resistance_levels: [],
-    };
-  }
+  const nullBase: TimeframeData = {
+    timeframe: label,
+    candle_count: candles.length,
+    current_price: candles[candles.length - 1]?.close ?? 0,
+    ohlc_last: { open: 0, high: 0, low: 0, close: 0 },
+    ema_20: null, ema_50: null, ema_200: null,
+    rsi_14: null, rsi_condition: "N/A",
+    macd: null, macd_signal: "N/A",
+    bollinger: null, bb_position: "N/A",
+    atr_14: null,
+    stochastic: null, stoch_condition: "N/A",
+    ichimoku: null,
+    fibonacci: null,
+    williams_r: null, williams_r_condition: "N/A",
+    cci_20: null, cci_condition: "N/A",
+    trend: "N/A",
+    patterns: [],
+    support_levels: [],
+    resistance_levels: [],
+  };
+
+  if (candles.length < 5) return nullBase;
 
   const closes = candles.map((c) => c.close);
   const last = candles[candles.length - 1];
@@ -283,6 +434,10 @@ export function buildTimeframeData(label: string, candles: Candle[]): TimeframeD
   const bbValues = bollingerBands(closes, 20, 2);
   const atrValues = atr(candles, 14);
   const stochValues = stochastic(candles, 14, 3, 3);
+  const ichimokuResult = ichimoku(candles);
+  const fibResult = fibonacciRetracement(candles);
+  const wrValues = williamsR(candles, 14);
+  const cciValues = cci(candles, 20);
   const structure = analyzeStructure(candles);
   const patterns = detectPatterns(candles);
 
@@ -290,13 +445,11 @@ export function buildTimeframeData(label: string, candles: Candle[]): TimeframeD
   const lastMacd = macdValues.at(-1) ?? null;
   const lastBb = bbValues.at(-1) ?? null;
   const lastStoch = stochValues.at(-1) ?? null;
+  const lastWr = wrValues.at(-1) ?? null;
+  const lastCci = cciValues.at(-1) ?? null;
 
   const rsiCondition = lastRsi
-    ? lastRsi > 70
-      ? "Overbought"
-      : lastRsi < 30
-        ? "Oversold"
-        : "Neutral"
+    ? lastRsi > 70 ? "Overbought" : lastRsi < 30 ? "Oversold" : "Neutral"
     : "N/A";
 
   const macdSignal = lastMacd
@@ -314,11 +467,15 @@ export function buildTimeframeData(label: string, candles: Candle[]): TimeframeD
   }
 
   const stochCondition = lastStoch
-    ? lastStoch.k > 80
-      ? "Overbought"
-      : lastStoch.k < 20
-        ? "Oversold"
-        : "Neutral"
+    ? lastStoch.k > 80 ? "Overbought" : lastStoch.k < 20 ? "Oversold" : "Neutral"
+    : "N/A";
+
+  const wrCondition = lastWr !== null
+    ? lastWr <= -80 ? "Oversold" : lastWr >= -20 ? "Overbought" : "Neutral"
+    : "N/A";
+
+  const cciCondition = lastCci !== null
+    ? lastCci > 100 ? "Overbought" : lastCci < -100 ? "Oversold" : "Neutral"
     : "N/A";
 
   return {
@@ -338,6 +495,12 @@ export function buildTimeframeData(label: string, candles: Candle[]): TimeframeD
     atr_14: atrValues.at(-1) ?? null,
     stochastic: lastStoch,
     stoch_condition: stochCondition,
+    ichimoku: ichimokuResult,
+    fibonacci: fibResult,
+    williams_r: lastWr,
+    williams_r_condition: wrCondition,
+    cci_20: lastCci,
+    cci_condition: cciCondition,
     trend: structure.trend,
     patterns,
     support_levels: structure.supportLevels,
