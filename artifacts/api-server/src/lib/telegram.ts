@@ -129,7 +129,17 @@ export function registerCommands(
         await sendMessage("❌ Analisis gagal. Coba lagi nanti.", chatId);
       }
     } catch (err) {
-      await sendMessage(`❌ Error: ${err instanceof Error ? err.message : "Unknown error"}`, chatId);
+      const msg2 = err instanceof Error ? err.message : "Unknown error";
+      if (msg2 === "market_closed" || msg2.toLowerCase().includes("closed")) {
+        await sendMessage(
+          "🔒 <b>Pasar XAUUSD Sedang Tutup</b>\n\n" +
+            "Pasar emas tutup setiap hari Sabtu pukul 04:00 WIB hingga Senin pukul 04:00 WIB.\n\n" +
+            "Bot akan otomatis menganalisis kembali saat pasar buka. Tidak perlu melakukan apa-apa.",
+          chatId
+        );
+      } else {
+        await sendMessage(`❌ Error: ${msg2}`, chatId);
+      }
     }
   });
 

@@ -25,6 +25,13 @@ const state: BotState = {
   task: null,
 };
 
+export class MarketClosedError extends Error {
+  constructor() {
+    super("market_closed");
+    this.name = "MarketClosedError";
+  }
+}
+
 export async function runAnalysis(): Promise<Signal | null> {
   logger.info("Starting XAUUSD market analysis");
   try {
@@ -63,8 +70,13 @@ export async function runAnalysis(): Promise<Signal | null> {
 
     return signal;
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.toLowerCase().includes("market") && msg.toLowerCase().includes("closed")) {
+      logger.warn("Market is closed — skipping analysis");
+      throw new MarketClosedError();
+    }
     logger.error({ err }, "Analysis failed");
-    return null;
+    throw err;
   }
 }
 
@@ -77,7 +89,15 @@ export function startBot(): void {
   state.task = cron.schedule(CRON_SCHEDULE, async () => {
     if (state.paused) return;
     state.nextTick = null;
-    await runAnalysis();
+    try {
+      await runAnalysis();
+    } catch (err) {
+      if (err instanceof MarketClosedError) {
+        logger.warn("Scheduled analysis skipped — market closed");
+      } else {
+        logger.error({ err }, "Scheduled analysis failed");
+      }
+    }
     const next = getNextRunTime();
     state.nextTick = next;
   });
@@ -85,7 +105,13 @@ export function startBot(): void {
   state.nextTick = getNextRunTime();
   logger.info({ schedule: CRON_SCHEDULE }, "Bot scheduler started");
 
-  runAnalysis().catch((err) => logger.error({ err }, "Initial analysis failed"));
+  runAnalysis().catch((err) => {
+    if (err instanceof MarketClosedError) {
+      logger.warn("Initial analysis skipped — market is currently closed. Will retry on schedule.");
+    } else {
+      logger.error({ err }, "Initial analysis failed");
+    }
+  });
 }
 
 export function stopBot(): void {
