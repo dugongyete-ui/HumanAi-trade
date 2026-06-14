@@ -1,5 +1,6 @@
 import type { TimeframeData } from "./indicators.js";
 import { logger } from "./logger.js";
+import { getCalendarContext, formatCalendarForAI } from "./news-calendar.js";
 
 const AI_API_URL = process.env.AI_API_URL ?? "https://qwn-api--miok1qpgd.replit.app/v1/chat/completions";
 const AI_API_KEY = process.env.AI_API_KEY ?? "";
@@ -447,12 +448,21 @@ export async function analyzeMarket(timeframes: TimeframeData[], currentPrice: n
     })),
   };
 
-  // Build the full user message: memory context + current data
+  // Fetch news calendar (non-blocking — fallback to empty if fails)
+  const calendarCtx = await getCalendarContext().catch(() => null);
+  const calendarSection = calendarCtx ? formatCalendarForAI(calendarCtx) : "";
+
+  // Build the full user message: memory + news + market data
   const memoryContext = buildMemoryContext();
   const marketDataSection = `## 📡 DATA PASAR REAL-TIME SAAT INI\n\n${JSON.stringify(sensoryData, null, 2)}`;
-  const userMessage = memoryContext
-    ? `${memoryContext}\n\n---\n\n${marketDataSection}\n\n---\n\nBerdasarkan memori di atas dan data pasar terkini, berikan analisis dan keputusan trading Atlas sekarang:`
-    : `Analisis data pasar XAUUSD berikut dan berikan keputusan trading:\n\n${JSON.stringify(sensoryData, null, 2)}`;
+
+  const parts: string[] = [];
+  if (memoryContext) parts.push(memoryContext);
+  if (calendarSection) parts.push(calendarSection);
+  parts.push(marketDataSection);
+  parts.push("---\n\nBerdasarkan semua konteks di atas (memori, kalender ekonomi, dan data pasar), berikan analisis dan keputusan trading Atlas sekarang:");
+
+  const userMessage = parts.join("\n\n---\n\n");
 
   const response = await fetch(AI_API_URL, {
     method: "POST",
