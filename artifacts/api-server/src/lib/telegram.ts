@@ -141,6 +141,42 @@ export function formatSignal(signal: Signal): string {
   );
 }
 
+export function formatResult(signal: Signal, result: "WIN" | "LOSS", exitPrice: number): string {
+  const isWin = result === "WIN";
+  const ts = new Date().toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const entryPrice = signal.entry_price ?? signal.current_price;
+  const rawPips = signal.decision === "BUY"
+    ? exitPrice - entryPrice
+    : entryPrice - exitPrice;
+  const pipsLabel = (rawPips >= 0 ? "+" : "") + rawPips.toFixed(2);
+
+  const duration = signal.exit_time
+    ? Math.round((new Date(signal.exit_time).getTime() - new Date(signal.timestamp).getTime()) / 60000)
+    : null;
+
+  return (
+    (isWin
+      ? `🏆 <b>ATLAS — PROFIT | TAKE PROFIT HIT ✅</b>\n`
+      : `💔 <b>ATLAS — LOSS | STOP LOSS HIT ❌</b>\n`) +
+    `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `📌 Sinyal: <b>${signal.decision} XAUUSD</b>\n` +
+    `💰 Entry: <b>$${entryPrice.toFixed(2)}</b>\n` +
+    `${isWin ? "🎯" : "🛑"} Exit: <b>$${exitPrice.toFixed(2)}</b>\n` +
+    `📊 P&L: <b>${pipsLabel} pips</b>\n` +
+    (duration !== null ? `⏱️ Durasi: <b>${duration} menit</b>\n` : "") +
+    `\n⏰ ${ts} WIB\n\n` +
+    `▶️ <i>Atlas melanjutkan analisis otomatis setiap 1 menit...</i>`
+  );
+}
+
 export function registerCommands(
   onAnalyze: () => Promise<Signal | null>,
   onStatus: () => object,
@@ -197,16 +233,49 @@ export function registerCommands(
     const chatId = msg.chat.id.toString();
     const status = onStatus() as {
       running: boolean;
+      paused: boolean;
+      mode: string;
       totalSignals: number;
       lastAnalysis: string | null;
       nextAnalysisIn: number | null;
+      activeSignal: { decision: string; entry_price?: number; take_profit?: number; stop_loss?: number; timestamp: string } | null;
+      winRate: { wins: number; losses: number; rate: number };
     };
+
+    const modeLabel =
+      status.mode === "MONITORING"
+        ? "🔭 MONITORING sinyal aktif"
+        : "🔍 ANALYZING (analisis otomatis)";
+
+    let activeInfo = "";
+    if (status.activeSignal) {
+      const a = status.activeSignal;
+      const since = new Date(a.timestamp).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit" });
+      activeInfo =
+        `\n📌 Sinyal Aktif: <b>${a.decision}</b> sejak ${since} WIB\n` +
+        `   🎯 TP: <b>$${a.take_profit?.toFixed(2) ?? "-"}</b>  🛑 SL: <b>$${a.stop_loss?.toFixed(2) ?? "-"}</b>\n`;
+    }
+
+    const nextInfo =
+      status.mode === "MONITORING"
+        ? "⏳ Menunggu trigger TP/SL..."
+        : status.nextAnalysisIn != null
+          ? `⏰ Analisis berikutnya: <b>${status.nextAnalysisIn}s lagi</b>`
+          : "";
+
     const msg2 =
-      `🤖 <b>Status Bot</b>\n\n` +
-      `Status: ${status.running ? "🟢 Aktif" : "🔴 Nonaktif"}\n` +
-      `Total Sinyal: <b>${status.totalSignals}</b>\n` +
-      (status.lastAnalysis ? `Analisis Terakhir: ${new Date(status.lastAnalysis).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} WIB\n` : "") +
-      (status.nextAnalysisIn != null ? `Analisis Berikutnya: <b>${Math.round(status.nextAnalysisIn / 60)} menit lagi</b>` : "");
+      `🤖 <b>Status Atlas Bot</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `Status: ${status.running ? (status.paused ? "⏸️ Dijeda" : "🟢 Aktif") : "🔴 Nonaktif"}\n` +
+      `Mode: <b>${modeLabel}</b>\n` +
+      activeInfo +
+      `\nTotal Sinyal: <b>${status.totalSignals}</b>\n` +
+      `Win Rate: <b>${status.winRate.wins}W / ${status.winRate.losses}L (${status.winRate.rate}%)</b>\n` +
+      (status.lastAnalysis
+        ? `Analisis Terakhir: ${new Date(status.lastAnalysis).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} WIB\n`
+        : "") +
+      nextInfo;
+
     await sendMessage(msg2, chatId);
   });
 
