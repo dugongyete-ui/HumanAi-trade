@@ -38,11 +38,28 @@ export async function sendMessage(text: string, chatId?: string): Promise<void> 
   }
 }
 
+const PHASE_LABEL: Record<string, string> = {
+  TRENDING_UP: "📈 Trending Naik",
+  TRENDING_DOWN: "📉 Trending Turun",
+  RANGING: "↔️ Ranging",
+  CONSOLIDATION: "🔄 Konsolidasi",
+  VOLATILE: "⚡ Volatil",
+  DISTRIBUTION: "🏦 Distribusi",
+  ACCUMULATION: "🏗️ Akumulasi",
+};
+
+const BIAS_EMOJI: Record<string, string> = {
+  BULLISH: "🟢",
+  BEARISH: "🔴",
+  NEUTRAL: "⚪",
+};
+
 export function formatSignal(signal: Signal): string {
   const decisionEmoji =
     signal.decision === "BUY" ? "🟢" : signal.decision === "SELL" ? "🔴" : "⏸️";
   const confidencePct = Math.round(signal.confidence * 100);
-  const confidenceBar = "█".repeat(Math.round(confidencePct / 10)) + "░".repeat(10 - Math.round(confidencePct / 10));
+  const filled = Math.round(confidencePct / 10);
+  const confidenceBar = "█".repeat(filled) + "░".repeat(10 - filled);
 
   const ts = new Date(signal.timestamp);
   const timeStr = ts.toLocaleString("id-ID", {
@@ -54,14 +71,27 @@ export function formatSignal(signal: Signal): string {
     minute: "2-digit",
   });
 
+  const phaseLabel = PHASE_LABEL[signal.market_phase] ?? signal.market_phase ?? "-";
+
+  const biasH4 = BIAS_EMOJI[signal.timeframe_bias?.H4 ?? "NEUTRAL"] ?? "⚪";
+  const biasH1 = BIAS_EMOJI[signal.timeframe_bias?.H1 ?? "NEUTRAL"] ?? "⚪";
+  const biasM15 = BIAS_EMOJI[signal.timeframe_bias?.M15 ?? "NEUTRAL"] ?? "⚪";
+
+  const confluenceScore = signal.confluence_score ?? 0;
+  const confluenceBar = "■".repeat(confluenceScore) + "□".repeat(Math.max(0, 10 - confluenceScore));
+
   if (signal.decision === "WAIT") {
     return (
-      `${decisionEmoji} <b>WAIT — XAUUSD</b>\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `💹 Harga Sekarang: <b>$${signal.current_price.toFixed(2)}</b>\n` +
+      `⏸️ <b>ATLAS — WAIT | XAUUSD</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `💹 Harga: <b>$${signal.current_price.toFixed(2)}</b>\n` +
+      `🗺️ Fase Pasar: <b>${phaseLabel}</b>\n` +
       `📊 Confidence: <b>${confidencePct}%</b> [${confidenceBar}]\n` +
-      `📋 Konteks: <i>${signal.market_context}</i>\n\n` +
-      `💬 <b>Analisis AI:</b>\n${signal.reasoning}\n\n` +
+      `🔗 Confluence: <b>${confluenceScore}/10</b> [${confluenceBar}]\n\n` +
+      `🧭 Bias Timeframe:\n` +
+      `  H4 ${biasH4}  H1 ${biasH1}  M15 ${biasM15}\n\n` +
+      `📋 <i>${signal.market_context}</i>\n\n` +
+      `💬 <b>Analisis Atlas:</b>\n${signal.reasoning}\n\n` +
       `⏰ ${timeStr} WIB`
     );
   }
@@ -70,28 +100,44 @@ export function formatSignal(signal: Signal): string {
   const tp = signal.take_profit?.toFixed(2) ?? "-";
   const sl = signal.stop_loss?.toFixed(2) ?? "-";
 
-  let rrText = "";
-  if (signal.entry_price && signal.take_profit && signal.stop_loss) {
+  let rr = signal.risk_reward_ratio?.toFixed(2);
+  if (!rr && signal.entry_price && signal.take_profit && signal.stop_loss) {
     const reward = Math.abs(signal.take_profit - signal.entry_price);
     const risk = Math.abs(signal.entry_price - signal.stop_loss);
-    if (risk > 0) {
-      rrText = `\n📐 Risk/Reward: <b>1:${(reward / risk).toFixed(2)}</b>`;
-    }
+    if (risk > 0) rr = (reward / risk).toFixed(2);
   }
+  const rrText = rr ? `\n📐 Risk/Reward: <b>1:${rr}</b>` : "";
+
+  const nearRes = signal.key_levels?.nearest_resistance?.toFixed(2);
+  const nearSup = signal.key_levels?.nearest_support?.toFixed(2);
+  const levelsText =
+    nearRes || nearSup
+      ? `\n🏔️ Resistance: <b>${nearRes ?? "-"}</b>  🏔️ Support: <b>${nearSup ?? "-"}</b>`
+      : "";
+
+  const invalidation = signal.invalidation
+    ? `\n\n⚠️ <b>Invalidasi:</b> <i>${signal.invalidation}</i>`
+    : "";
 
   return (
-    `${decisionEmoji} <b>${signal.decision} Signal — XAUUSD</b>\n` +
-    `━━━━━━━━━━━━━━━━━━━━━━\n` +
-    `💹 Harga Sekarang: <b>$${signal.current_price.toFixed(2)}</b>\n` +
+    `${decisionEmoji} <b>ATLAS — ${signal.decision} | XAUUSD</b>\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `💹 Harga: <b>$${signal.current_price.toFixed(2)}</b>\n` +
+    `🗺️ Fase Pasar: <b>${phaseLabel}</b>\n` +
     `📊 Confidence: <b>${confidencePct}%</b> [${confidenceBar}]\n` +
-    `💰 Entry Price: <b>$${entry}</b>\n` +
+    `🔗 Confluence: <b>${confluenceScore}/10</b> [${confluenceBar}]\n\n` +
+    `🧭 Bias Timeframe:\n` +
+    `  H4 ${biasH4}  H1 ${biasH1}  M15 ${biasM15}\n\n` +
+    `💰 Entry: <b>$${entry}</b>\n` +
     `🎯 Take Profit: <b>$${tp}</b>\n` +
     `🛡️ Stop Loss: <b>$${sl}</b>` +
     rrText +
+    levelsText +
     `\n\n` +
-    `📋 Konteks: <i>${signal.market_context}</i>\n\n` +
-    `💬 <b>Analisis AI:</b>\n${signal.reasoning}\n\n` +
-    `⏰ ${timeStr} WIB`
+    `📋 <i>${signal.market_context}</i>\n\n` +
+    `💬 <b>Analisis Atlas:</b>\n${signal.reasoning}` +
+    invalidation +
+    `\n\n⏰ ${timeStr} WIB`
   );
 }
 
