@@ -204,3 +204,63 @@ export const GRANULARITY = {
   H4: 14400,
   D1: 86400,
 };
+
+// ─── USD Proxy (EURUSD as Dollar Strength Indicator) ──────────────────────────
+
+export interface USDProxy {
+  symbol: string;
+  trend: "USD_STRONG" | "USD_WEAK" | "USD_NEUTRAL";
+  interpretation: string;
+  last_close: number;
+  change_pct_10h: number;
+}
+
+export async function fetchUSDProxy(): Promise<USDProxy> {
+  const response = await connection.request<{
+    candles: Array<{ open: string; high: string; low: string; close: string; epoch: number }>;
+  }>(
+    {
+      ticks_history: "frxEURUSD",
+      adjust_start_time: 1,
+      count: 20,
+      end: "latest",
+      granularity: GRANULARITY.H1,
+      style: "candles",
+    },
+    "candles"
+  );
+
+  const closes = response.candles.map((c) => parseFloat(c.close));
+  const lastClose = closes[closes.length - 1];
+  const closeN10 = closes[Math.max(0, closes.length - 11)];
+  const changePct = ((lastClose - closeN10) / closeN10) * 100;
+
+  // EMA8 as trend filter
+  const k = 2 / 9;
+  let ema8 = closes.slice(0, 8).reduce((a, b) => a + b, 0) / 8;
+  for (let i = 8; i < closes.length; i++) {
+    ema8 = closes[i] * k + ema8 * (1 - k);
+  }
+
+  let trend: "USD_STRONG" | "USD_WEAK" | "USD_NEUTRAL";
+  let interpretation: string;
+
+  if (lastClose > ema8 * 1.0008) {
+    trend = "USD_WEAK";
+    interpretation = `EURUSD naik ${changePct.toFixed(3)}% (10 jam terakhir) → Dolar melemah → cenderung BULLISH untuk XAUUSD`;
+  } else if (lastClose < ema8 * 0.9992) {
+    trend = "USD_STRONG";
+    interpretation = `EURUSD turun ${changePct.toFixed(3)}% (10 jam terakhir) → Dolar menguat → cenderung BEARISH untuk XAUUSD`;
+  } else {
+    trend = "USD_NEUTRAL";
+    interpretation = `EURUSD sideways → Dolar netral → dampak USD terhadap XAUUSD minimal saat ini`;
+  }
+
+  return {
+    symbol: "EURUSD H1 (proxy kekuatan USD)",
+    trend,
+    interpretation,
+    last_close: parseFloat(lastClose.toFixed(5)),
+    change_pct_10h: parseFloat(changePct.toFixed(4)),
+  };
+}

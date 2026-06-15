@@ -1,4 +1,5 @@
 import type { TimeframeData } from "./indicators.js";
+import type { USDProxy } from "./deriv-client.js";
 import { logger } from "./logger.js";
 import { getCalendarContext, formatCalendarForAI } from "./news-calendar.js";
 import { loadPersistedMemory, saveMemoryToDisk } from "./persistent-memory.js";
@@ -58,11 +59,15 @@ Sebelum membuat keputusan apapun, **bangun gambaran besar terlebih dahulu**:
 | **DISTRIBUTION** | Smart money sedang melepas posisi — waspadai reversal |
 | **ACCUMULATION** | Smart money sedang mengumpulkan posisi — potensi breakout |
 
-### 3.3 — Narasi Makro (jika tersedia)
-- Risk-on vs risk-off di pasar global?
-- **Emas berkorelasi terbalik dengan USD** — perhatikan kekuatan/kelemahan dolar
+### 3.3 — Konteks USD & Narasi Makro (Data Tersedia)
+- **Data "usd_context" SELALU tersedia** — berisi trend EURUSD H1 sebagai proxy kekuatan dolar:
+  - USD_WEAK (EURUSD naik) → Tekanan **BULLISH** pada emas — dolar melemah mendorong harga emas naik
+  - USD_STRONG (EURUSD turun) → Tekanan **BEARISH** pada emas — dolar menguat menekan harga emas
+  - USD_NEUTRAL → Dampak dolar minimal — fokus pada struktur teknikal emas itu sendiri
+- Konfirmasi USD context dengan bias H4 emas: jika keduanya alignment (contoh: USD_WEAK + H4 BULLISH), konfluensi lebih kuat
 - Emas adalah **safe-haven asset** — ketidakpastian geopolitik/global = potensi demand naik
-- Jika ada kalender ekonomi: NFP, FOMC, CPI, atau event besar lainnya → naikkan kewaspadaan, condongkan ke WAIT
+- Jika ada kalender ekonomi: NFP, FOMC, CPI, atau event besar → naikkan kewaspadaan, condongkan ke WAIT
+- Jika field "market_close_warning" terisi → **sangat disarankan WAIT** atau kurangi risk secara signifikan (risiko gap weekend)
 
 ---
 
@@ -70,7 +75,9 @@ Sebelum membuat keputusan apapun, **bangun gambaran besar terlebih dahulu**:
 
 Lakukan proses berpikir berjenjang ini secara internal sebelum menjawab. Hasilnya tercermin di field "reasoning".
 
-### Langkah 1 — Baca "Big Picture" (H4 / H1)
+### Langkah 1 — Baca "Big Picture" (D1 → H4 → H1)
+- **Mulai dari D1** (50 candle ≈ 2 bulan): tentukan tren jangka panjang, identifikasi level psikologis besar (monthly high/low, zona konsolidasi mayor, support/resistance bersejarah). Ini "peta jalan" terluar yang tidak boleh diabaikan.
+- Kemudian konfirmasi di H4 dan H1: apakah tren D1 masih konsisten? Di mana posisi harga relatif terhadap struktur D1? Apakah harga mendekati zona kunci jangka panjang?
 - Apa arah tren dominan? Tentukan dari struktur **HH/HL** (uptrend), **LL/LH** (downtrend), atau struktur datar (ranging).
 - Di mana posisi harga saat ini relatif terhadap zona **Support/Resistance atau Supply/Demand mayor**? Dekat zona penting, atau di "no man's land"?
 - Apakah pasar trending kuat, konsolidasi, atau choppy?
@@ -110,6 +117,7 @@ Gunakan semua indikator sebagai **bukti yang mendukung narasi**, bukan perintah 
 | **MACD** | Konfirmasi perubahan momentum dan divergensi tersembunyi |
 | **Bollinger Bands** | Squeeze = energi terakumulasi; expansion = breakout sedang terjadi |
 | **ATR (14)** | Sesuaikan SL/TP berdasarkan volatilitas aktual, bukan nilai tetap |
+| **ATR Percentile** | ATR saat ini relatif rata-rata 20 periode: <80% = tenang/squeeze (potensi breakout); 80–120% = normal; >120% = volatilitas tinggi → dukung label VOLATILE/RANGING; >150% = sangat volatil, perlebar SL |
 | **Stochastic (14,3,3)** | Konfirmasi kondisi jenuh beli/jual pada timeframe rendah |
 | **Ichimoku Cloud** | Tenkan/Kijun cross = sinyal momentum; posisi harga vs cloud = filter bias tren; cloud bullish/bearish = konteks jangka menengah |
 | **Fibonacci Retracement** | Zona 38.2%–61.8% adalah golden zone untuk re-entry; perhatikan confluence Fibonacci + S/R struktur |
@@ -160,12 +168,14 @@ WAIT adalah keputusan profesional — bukan kelemahan
 
 Respons HANYA dalam format JSON valid berikut — tidak ada teks di luar JSON, tidak ada markdown code block, tidak ada pembuka/penutup:
 
-{"decision":"BUY|SELL|WAIT","confidence":0.0,"entry_price":null,"take_profit":null,"stop_loss":null,"risk_reward_ratio":null,"market_phase":"TRENDING_UP|TRENDING_DOWN|RANGING|CONSOLIDATION|VOLATILE|DISTRIBUTION|ACCUMULATION","timeframe_bias":{"H4":"BULLISH|BEARISH|NEUTRAL","H1":"BULLISH|BEARISH|NEUTRAL","M15":"BULLISH|BEARISH|NEUTRAL"},"confluence_score":0,"key_levels":{"nearest_resistance":null,"nearest_support":null},"market_context":"Deskripsi singkat kondisi pasar saat ini: fase, siapa yang dominan, level kritis","reasoning":"Penjelasan naratif lengkap dalam Bahasa Indonesia yang mencerminkan proses berpikir Langkah 1-5: kondisi big picture, mood pasar, konfirmasi entry, hasil confluence check, dasar penentuan TP/SL, dan faktor risiko tambahan jika ada.","invalidation":"Kondisi atau level spesifik yang jika tercapai berarti analisis ini SALAH dan sinyal harus segera dibatalkan"}
+{"decision":"BUY|SELL|WAIT","confidence":0.0,"entry_price":null,"take_profit":null,"stop_loss":null,"risk_reward_ratio":null,"market_phase":"TRENDING_UP|TRENDING_DOWN|RANGING|CONSOLIDATION|VOLATILE|DISTRIBUTION|ACCUMULATION","timeframe_bias":{"H4":"BULLISH|BEARISH|NEUTRAL","H1":"BULLISH|BEARISH|NEUTRAL","M15":"BULLISH|BEARISH|NEUTRAL"},"confluence_score":0,"key_levels":{"nearest_resistance":null,"nearest_support":null},"market_context":"Deskripsi singkat kondisi pasar saat ini: fase, siapa yang dominan, level kritis","reasoning":"Penjelasan naratif lengkap dalam Bahasa Indonesia yang mencerminkan proses berpikir Langkah 1-5: mulai dari D1 big picture, konfirmasi H4/H1, mood pasar, konfirmasi entry M15/M5, hasil confluence check, dasar penentuan TP/SL, dan faktor risiko tambahan jika ada.","invalidation":"Kondisi atau level spesifik yang jika tercapai berarti analisis ini SALAH dan sinyal harus segera dibatalkan","bull_case":"3 argumen teknikal terkuat mengapa harga NAIK saat ini — spesifik dan berbasis data yang tersedia (level, indikator, struktur)","bear_case":"3 argumen teknikal terkuat mengapa harga TURUN saat ini — spesifik dan berbasis data yang tersedia (level, indikator, struktur)","what_would_change_my_mind":"Kondisi teknikal atau level harga spesifik yang jika terjadi akan membalikkan keputusan ini sepenuhnya","lesson":"1-2 kalimat insight kualitatif dari kondisi pasar saat ini yang berguna untuk diingat di siklus berikutnya — berisi pola atau nuansa yang tidak tertangkap angka (contoh: 'resistance H1 $X sudah diuji 3x minggu ini, setiap breakout gagal — level ini sangat kuat')"}
 
 Catatan Output:
 - Jika "decision" adalah "WAIT", maka entry_price, take_profit, stop_loss, dan risk_reward_ratio WAJIB null
 - TP dan SL harus realistis berdasarkan ATR dan level S/R yang terlihat dari data — bukan angka bulat sembarangan
 - confluence_score adalah integer 0-10 yang merepresentasikan berapa banyak faktor/indikator yang selaras
+- bull_case dan bear_case WAJIB diisi — bahkan saat WAIT, menimbang kedua sisi adalah inti dari analisis yang jujur
+- lesson WAJIB diisi — isi dengan insight yang tidak bisa diwakili angka; jika tidak ada yang istimewa, tuliskan observasi pasar yang paling relevan saat ini
 - Gunakan Bahasa Indonesia yang profesional, jelas, dan mudah dimengerti di semua field teks`;
 
 // ─── AI Signal Type ────────────────────────────────────────────────────────────
@@ -191,6 +201,10 @@ export interface AISignal {
   market_context: string;
   reasoning: string;
   invalidation: string;
+  bull_case: string;
+  bear_case: string;
+  what_would_change_my_mind: string;
+  lesson: string;
 }
 
 // ─── Memory System ─────────────────────────────────────────────────────────────
@@ -208,6 +222,7 @@ interface MemoryEntry {
   entry_price: number | null;
   take_profit: number | null;
   stop_loss: number | null;
+  lesson?: string;
   result?: "WIN" | "LOSS" | "ACTIVE" | "EXPIRED";
   exit_price?: number;
   exit_time?: string;
@@ -286,6 +301,8 @@ export function recordAnalysis(signal: AISignal, price: number, timeWib: string)
     result: signal.decision !== "WAIT" ? "ACTIVE" : undefined,
   };
 
+  if (signal.lesson && signal.lesson !== "-") entry.lesson = signal.lesson;
+
   memory.unshift(entry);
   if (memory.length > MAX_MEMORY) memory.splice(MAX_MEMORY);
   saveMemoryToDisk(memory, sessionStats);
@@ -358,6 +375,9 @@ function buildMemoryContext(): string {
       );
     }
     lines.push(`   "${m.market_context}"`);
+    if (m.lesson) {
+      lines.push(`   📝 Lesson: "${m.lesson}"`);
+    }
   });
 
   // --- Reflection prompts
@@ -383,9 +403,39 @@ function getTradingSession(): string {
   return "Off-hours / transisi sesi";
 }
 
+// ─── Market Close Warning (Weekend Gap Risk) ──────────────────────────────────
+
+function getMarketCloseWarning(): string | null {
+  const now = new Date();
+  const dayUTC = now.getUTCDay(); // 0=Sun 1=Mon ... 5=Fri 6=Sat
+  if (dayUTC !== 5) return null;
+
+  const closeTotalMin = 20 * 60 + 55; // Deriv XAUUSD closes ~20:55 UTC Friday
+  const nowTotalMin = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const minutesLeft = closeTotalMin - nowTotalMin;
+  if (minutesLeft <= 0) return null;
+
+  const h = Math.floor(minutesLeft / 60);
+  const m = minutesLeft % 60;
+  const timeLabel = h > 0 ? `${h} jam ${m} menit` : `${m} menit`;
+
+  if (minutesLeft <= 120) {
+    return `🚨 PERINGATAN KRITIS: Market XAUUSD tutup dalam ${timeLabel} (Jumat 20:55 UTC). SANGAT DISARANKAN WAIT — risiko gap weekend tinggi, spread melebar, likuiditas menipis.`;
+  }
+  if (minutesLeft <= 240) {
+    return `⚡ PERHATIAN: Market XAUUSD tutup dalam ${timeLabel} (Jumat 20:55 UTC). Pertimbangkan risiko gap weekend jika membuka posisi baru.`;
+  }
+  return null;
+}
+
 // ─── Main Analysis Function ────────────────────────────────────────────────────
 
-export async function analyzeMarket(timeframes: TimeframeData[], currentPrice: number): Promise<AISignal> {
+export async function analyzeMarket(
+  timeframes: TimeframeData[],
+  currentPrice: number,
+  tick: { bid: number; ask: number; quote: number; epoch: number },
+  usdProxy: USDProxy | null
+): Promise<AISignal> {
   const now = new Date();
   const wibTime = now.toLocaleString("id-ID", {
     timeZone: "Asia/Jakarta",
@@ -398,9 +448,18 @@ export async function analyzeMarket(timeframes: TimeframeData[], currentPrice: n
     second: "2-digit",
   });
 
+  const spread = parseFloat((tick.ask - tick.bid).toFixed(2));
   const sensoryData = {
     symbol: "XAUUSD",
     current_price: currentPrice,
+    bid: tick.bid,
+    ask: tick.ask,
+    spread,
+    spread_note: spread > 0.5
+      ? `LEBAR (${spread}) — likuiditas tipis atau mendekati news`
+      : spread > 0.3 ? `NORMAL-TINGGI (${spread})` : `NORMAL (${spread})`,
+    market_close_warning: getMarketCloseWarning(),
+    usd_context: usdProxy,
     analysis_time: now.toISOString(),
     analysis_time_wib: wibTime,
     trading_session: getTradingSession(),
@@ -408,6 +467,8 @@ export async function analyzeMarket(timeframes: TimeframeData[], currentPrice: n
       timeframe: tf.timeframe,
       current_price: tf.current_price,
       ohlc_last_candle: tf.ohlc_last,
+      ohlc_recent_candles: tf.ohlc_recent,
+      atr_percentile: tf.atr_percentile,
       trend: tf.trend,
       indicators: {
         ema_20: tf.ema_20?.toFixed(2),
@@ -541,6 +602,10 @@ export async function analyzeMarket(timeframes: TimeframeData[], currentPrice: n
   parsed.key_levels ??= { nearest_resistance: null, nearest_support: null };
   parsed.market_phase ??= "RANGING";
   parsed.invalidation ??= "-";
+  parsed.bull_case ??= "-";
+  parsed.bear_case ??= "-";
+  parsed.what_would_change_my_mind ??= "-";
+  parsed.lesson ??= "-";
 
   // Record to memory AFTER successful parse
   recordAnalysis(parsed, currentPrice, wibTime);

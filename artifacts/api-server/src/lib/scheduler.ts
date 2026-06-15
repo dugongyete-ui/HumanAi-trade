@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { fetchCandles, fetchCurrentTick, checkMarketOpen, GRANULARITY } from "./deriv-client.js";
+import { fetchCandles, fetchCurrentTick, checkMarketOpen, fetchUSDProxy, GRANULARITY, type USDProxy } from "./deriv-client.js";
 import { buildTimeframeData } from "./indicators.js";
 import { analyzeMarket, recordSignalResult as recordMemoryResult } from "./ai-agent.js";
 import {
@@ -239,12 +239,17 @@ export async function runAnalysis(): Promise<Signal | null> {
     throw new MarketClosedError();
   }
 
-  const [candlesM5, candlesM15, candlesH1, candlesH4, tick] = await Promise.all([
+  const [candlesM5, candlesM15, candlesH1, candlesH4, candlesD1, tick, usdProxy] = await Promise.all([
     fetchCandles(GRANULARITY.M5, 100),
     fetchCandles(GRANULARITY.M15, 100),
     fetchCandles(GRANULARITY.H1, 100),
     fetchCandles(GRANULARITY.H4, 100),
+    fetchCandles(GRANULARITY.D1, 50),
     fetchCurrentTick(),
+    fetchUSDProxy().catch((err): USDProxy | null => {
+      logger.warn({ err }, "USD proxy fetch failed — skipping");
+      return null;
+    }),
   ]);
 
   const timeframes = [
@@ -252,12 +257,13 @@ export async function runAnalysis(): Promise<Signal | null> {
     buildTimeframeData("M15", candlesM15),
     buildTimeframeData("H1", candlesH1),
     buildTimeframeData("H4", candlesH4),
+    buildTimeframeData("D1", candlesD1),
   ];
 
   const currentPrice = tick.quote;
   logger.info({ price: currentPrice }, "Market data fetched");
 
-  const aiSignal = await analyzeMarket(timeframes, currentPrice);
+  const aiSignal = await analyzeMarket(timeframes, currentPrice, tick, usdProxy);
   logger.info({ decision: aiSignal.decision, confidence: aiSignal.confidence }, "AI analysis complete");
 
   const signal = storeSignal(aiSignal, currentPrice);

@@ -375,6 +375,8 @@ export interface TimeframeData {
   candle_count: number;
   current_price: number;
   ohlc_last: { open: number; high: number; low: number; close: number };
+  ohlc_recent: Array<{ open: number; high: number; low: number; close: number; epoch: number }>;
+  atr_percentile: number | null;
   ema_20: number | null;
   ema_50: number | null;
   ema_200: number | null;
@@ -405,6 +407,8 @@ export function buildTimeframeData(label: string, candles: Candle[]): TimeframeD
     candle_count: candles.length,
     current_price: candles[candles.length - 1]?.close ?? 0,
     ohlc_last: { open: 0, high: 0, low: 0, close: 0 },
+    ohlc_recent: [],
+    atr_percentile: null,
     ema_20: null, ema_50: null, ema_200: null,
     rsi_14: null, rsi_condition: "N/A",
     macd: null, macd_signal: "N/A",
@@ -483,6 +487,14 @@ export function buildTimeframeData(label: string, candles: Candle[]): TimeframeD
     candle_count: candles.length,
     current_price: last.close,
     ohlc_last: { open: last.open, high: last.high, low: last.low, close: last.close },
+    ohlc_recent: candles.slice(-3).map((c) => ({ open: c.open, high: c.high, low: c.low, close: c.close, epoch: c.epoch })),
+    atr_percentile: (() => {
+      if (atrValues.length < 20) return null;
+      const recent = atrValues.slice(-20);
+      const mean = recent.reduce((a, b) => a + b, 0) / 20;
+      const cur = atrValues.at(-1)!;
+      return mean > 0 ? parseFloat(((cur / mean) * 100).toFixed(1)) : null;
+    })(),
     ema_20: emaValues20.at(-1) ?? null,
     ema_50: emaValues50.at(-1) ?? null,
     ema_200: emaValues200.at(-1) ?? null,
