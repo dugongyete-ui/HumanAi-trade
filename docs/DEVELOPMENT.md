@@ -75,7 +75,7 @@ pnpm run typecheck:libs
 ### Ubah interval analisis
 File: `artifacts/api-server/src/lib/scheduler.ts`
 ```typescript
-const CRON_SCHEDULE = "*/1 * * * *";  // ubah ini
+const CRON_SCHEDULE = "*/5 * * * *";  // ubah ini
 ```
 
 ### Ubah threshold confidence

@@ -7,6 +7,12 @@ const AI_API_URL = process.env.AI_API_URL ?? "https://qwn-api--miok1qpgd.replit.
 const AI_API_KEY = process.env.AI_API_KEY ?? "";
 const AI_MODEL = process.env.AI_MODEL ?? "qwen3.7-max";
 
+if (!AI_API_KEY) {
+  throw new Error(
+    "AI_API_KEY environment variable is not set. Set it in Replit Secrets before starting the bot."
+  );
+}
+
 // ─── System Prompt ─────────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `# SYSTEM PROMPT — ATLAS: XAUUSD AUTONOMOUS MARKET ANALYST

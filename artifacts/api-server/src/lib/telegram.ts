@@ -224,7 +224,7 @@ export function formatResult(
     `📊 P&L: <b>${pipsLabel} pips</b>\n` +
     (duration !== null ? `⏱️ Durasi: <b>${duration} menit</b>\n` : "") +
     `\n⏰ ${ts} WIB\n\n` +
-    `▶️ <i>Atlas melanjutkan analisis otomatis setiap 1 menit...</i>`
+    `▶️ <i>Atlas melanjutkan analisis otomatis setiap 5 menit...</i>`
   );
 }
 
@@ -242,7 +242,7 @@ export function registerCommands(
     const chatId = msg.chat.id.toString();
     await sendMessage(
       `🤖 <b>XAUUSD AI Trading Bot — Atlas</b>\n\n` +
-        `Bot otonom yang menganalisis pasar emas setiap 1 menit menggunakan AI multi-timeframe.\n\n` +
+        `Bot otonom yang menganalisis pasar emas setiap 5 menit menggunakan AI multi-timeframe.\n\n` +
         `<b>Perintah tersedia:</b>\n` +
         `/analyze — Analisis pasar sekarang\n` +
         `/status — Status bot, mode, sinyal aktif, win rate\n` +
@@ -273,7 +273,7 @@ export function registerCommands(
             "• Buka: Senin – Jumat, mulai <b>07:00 WIB</b> (00:00 UTC)\n" +
             "• Tutup: Sabtu dini hari s/d Senin 07:00 WIB\n" +
             "• Jumat tutup lebih awal pukul ~03:55 WIB (20:55 UTC)\n\n" +
-            "⏰ Bot akan otomatis menganalisis ≤1 menit setelah pasar buka.",
+            "⏰ Bot akan otomatis menganalisis ≤5 menit setelah pasar buka.",
           chatId
         );
       } else {

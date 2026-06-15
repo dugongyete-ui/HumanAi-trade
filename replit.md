@@ -1,6 +1,6 @@
 # XAUUSD AI Trading Bot — Atlas
 
-Bot Telegram AI **otonom** yang menganalisis pasar emas (XAUUSD) menggunakan multi-timeframe technical analysis, memori AI antar siklus, dan kalender ekonomi real-time. Mengirim sinyal BUY/SELL ke Telegram otomatis setiap 1 menit, monitor TP/SL real-time, kirim notif WIN/LOSS otomatis.
+Bot Telegram AI **otonom** yang menganalisis pasar emas (XAUUSD) menggunakan multi-timeframe technical analysis, memori AI antar siklus, dan kalender ekonomi real-time. Mengirim sinyal BUY/SELL ke Telegram otomatis setiap 5 menit, monitor TP/SL real-time, kirim notif WIN/LOSS otomatis.
 
 ## 📚 Dokumentasi Lengkap
 
@@ -29,7 +29,7 @@ pnpm --filter @workspace/api-spec run codegen           # regenerate API hooks d
 - Data: Deriv WebSocket API (frxXAUUSD)
 - AI: Custom LLM endpoint (qwen3.7-max via qwn-api) + in-memory AI memory system
 - Telegram: node-telegram-bot-api (polling mode)
-- Scheduler: node-cron (`*/1 * * * *` — setiap 1 menit)
+- Scheduler: node-cron (`*/5 * * * *` — setiap 5 menit)
 - Monitor: setInterval 10 detik (cek TP/SL saat MONITORING mode)
 - Kalender: ForexFactory public JSON (gratis, tanpa API key)
 - Frontend: React + Vite + shadcn/ui + Tailwind CSS
@@ -60,7 +60,7 @@ install.sh                                    ← One-shot installer
 ## Bot State Machine
 
 ```
-ANALYZING  →  analisis setiap 1 menit
+ANALYZING  →  analisis setiap 5 menit
                BUY/SELL conf≥60%? → kirim sinyal → masuk MONITORING
                WAIT / conf<60%   → tetap ANALYZING
 
@@ -118,4 +118,4 @@ AI menerima sebelum analisis:
 - AI provider: Custom endpoint `https://qwn-api--miok1qpgd.replit.app/v1/chat/completions` (model: qwen3.7-max)
 - Bahasa Indonesia untuk semua konten user-facing
 - Secrets di Replit Secrets (bukan file .env)
-- Analisis setiap 1 menit (bukan 15 menit)
+- Analisis setiap 5 menit

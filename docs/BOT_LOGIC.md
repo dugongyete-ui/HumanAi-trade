@@ -7,7 +7,7 @@ Bot beroperasi dalam 2 mode yang berpindah otomatis:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                   ANALYZING MODE                        │
-│  Cron: */1 * * * * (setiap 1 menit)                    │
+│  Cron: */5 * * * * (setiap 5 menit)                    │
 │  Cek market buka → fetch 4 timeframe → hitung indikator │
 │  → inject memori + kalender → kirim ke LLM             │
 │  → BUY/SELL conf≥60%?                                  │
@@ -37,7 +37,7 @@ Bot beroperasi dalam 2 mode yang berpindah otomatis:
 | Parameter | Nilai | Keterangan |
 |---|---|---|
 | Confidence minimum | 60% | Di bawah ini → tidak kirim sinyal, tidak masuk MONITORING |
-| Cron schedule | `*/1 * * * *` | Analisis setiap 1 menit |
+| Cron schedule | `*/5 * * * *` | Analisis setiap 5 menit |
 | Monitor interval | 10 detik | Cek TP/SL saat MONITORING |
 | Market cache TTL | 3 menit | Cache hasil `checkMarketOpen()` supaya tidak hit Deriv API setiap menit |
 | Calendar cache TTL | 1 jam | Cache ForexFactory feed |

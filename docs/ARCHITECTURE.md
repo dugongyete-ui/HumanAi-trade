@@ -63,7 +63,7 @@ Gunakan `localhost:80/api/healthz` bukan `localhost:8080/api/healthz`.
 | Data pasar | Deriv WebSocket API (`frxXAUUSD`) |
 | AI | Custom LLM endpoint (qwen3.7-max via `qwn-api`) |
 | Telegram | node-telegram-bot-api (polling mode) |
-| Scheduler | node-cron (`*/1 * * * *`) |
+| Scheduler | node-cron (`*/5 * * * *`) |
 | Frontend | React + Vite + shadcn/ui + Tailwind CSS |
 | Validasi | Zod v4, drizzle-zod |
 | Codegen | Orval (OpenAPI → React Query hooks + Zod schemas) |
@@ -124,6 +124,7 @@ Semua disimpan di Replit Secrets (bukan `.env` file).
 | POST | `/api/bot/analyze` | Trigger analisis manual |
 | GET | `/api/signals?limit=N` | Riwayat sinyal (max 100) |
 | GET | `/api/market/current` | Harga XAUUSD terkini + bid/ask |
+| GET | `/api/calendar` | Event kalender ekonomi + alert level |
 
 ---
 

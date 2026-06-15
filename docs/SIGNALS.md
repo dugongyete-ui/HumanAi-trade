@@ -97,7 +97,7 @@ interface Signal extends AISignal {
 
 ⏰ 15 Jun 2026, 09:08 WIB
 
-▶️ Atlas melanjutkan analisis otomatis setiap 1 menit...
+▶️ Atlas melanjutkan analisis otomatis setiap 5 menit...
 ```
 
 ---
@@ -115,7 +115,7 @@ interface Signal extends AISignal {
 
 ⏰ 15 Jun 2026, 08:56 WIB
 
-▶️ Atlas melanjutkan analisis otomatis setiap 1 menit...
+▶️ Atlas melanjutkan analisis otomatis setiap 5 menit...
 ```
 
 ---

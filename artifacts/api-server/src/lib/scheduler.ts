@@ -334,7 +334,7 @@ export function startBot(): void {
   });
 
   state.nextTick = getNextRunTime();
-  logger.info({ schedule: CRON_SCHEDULE }, "Bot scheduler started (1-minute cycle)");
+  logger.info({ schedule: CRON_SCHEDULE }, "Bot scheduler started (5-minute cycle)");
 
   runAnalysis().catch((err) => {
     if (err instanceof MarketClosedError) {
@@ -376,7 +376,14 @@ function getNextRunTime(): Date {
   const now = new Date();
   const next = new Date(now);
   next.setSeconds(0, 0);
-  next.setMinutes(now.getMinutes() + 1);
+  // Cron runs every 5 minutes on the 0/5/10/... boundary
+  const currentMin = now.getMinutes();
+  const nextMin = Math.ceil((currentMin + 1) / 5) * 5;
+  next.setMinutes(nextMin);
+  if (nextMin >= 60) {
+    next.setMinutes(nextMin - 60);
+    next.setHours(next.getHours() + 1);
+  }
   return next;
 }
 
