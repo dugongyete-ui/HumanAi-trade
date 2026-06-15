@@ -65,6 +65,9 @@ interface BotState {
   monitorTimer: ReturnType<typeof setInterval> | null;
   activeSignal: Signal | null;
   monitorState: MonitorState | null;
+  /** Timestamp (ms) of the most recent /chat analysis completion — used to suppress
+   *  scheduled WAIT briefs that would overlap and confuse the user. */
+  lastChatAnalysisAt: number | null;
 }
 
 const state: BotState = {
@@ -78,6 +81,7 @@ const state: BotState = {
   monitorTimer: null,
   activeSignal: null,
   monitorState: null,
+  lastChatAnalysisAt: null,
 };
 
 // ─── Market Open Cache ────────────────────────────────────────────────────────
@@ -299,6 +303,14 @@ async function _runAnalysisInternal(): Promise<Signal | null> {
     aiSignal.confidence >= sessionConfig.confidenceMin &&
     confluenceOk;
 
+  // Suppress scheduled WAIT brief if a /chat analysis was done recently (within 90s).
+  // This prevents overlap confusion where the user sees the scheduled brief
+  // right after sending /chat and mistakes it for the on-demand response.
+  const CHAT_SUPPRESS_MS = 90_000;
+  const chatRecentlyDone =
+    state.lastChatAnalysisAt !== null &&
+    Date.now() - state.lastChatAnalysisAt < CHAT_SUPPRESS_MS;
+
   if (isActionable) {
     await sendMessage(formatSignal(signal));
     logger.info(
@@ -316,6 +328,12 @@ async function _runAnalysisInternal(): Promise<Signal | null> {
         trailSL: state.monitorState?.trailingSL.toFixed(2),
       },
       "Switched to MONITORING mode"
+    );
+  } else if (chatRecentlyDone) {
+    // A /chat was done recently — skip the scheduled WAIT brief to avoid confusion.
+    logger.info(
+      { suppressedSince: state.lastChatAnalysisAt },
+      "Scheduled WAIT brief suppressed — /chat analysis was done within 90s"
     );
   } else if (aiSignal.decision === "WAIT") {
     await sendMessage(formatWaitBrief(signal));
@@ -383,6 +401,9 @@ export async function runChatAnalysis(userQuery: string): Promise<ChatAnalysisRe
   logger.info({ price: currentPrice, query: userQuery }, "Market data fetched for /chat");
 
   const signal = await analyzeMarketOnDemand(userQuery, timeframes, currentPrice, tick, usdProxy);
+
+  // Record completion time so scheduled WAIT briefs are suppressed for 90s
+  state.lastChatAnalysisAt = Date.now();
 
   // ── Integrate IMMEDIATE_ENTRY into monitoring state machine ──────────────
   let monitorStarted = false;
