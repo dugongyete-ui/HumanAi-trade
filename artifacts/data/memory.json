@@ -1,6 +1,42 @@
 {
   "memory": [
     {
+      "timestamp": "2026-06-15T00:20:22.892Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 07.20.01",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4304.02,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "NEUTRAL"
+      },
+      "confluence_score": 3,
+      "market_context": "Harga XAUUSD ($4304.02) baru saja menembus EMA 50 H4 (4303.53) dan Upper Bollinger Band H4 (4297.41) dalam kondisi overbought ekstrem di M5 (RSI 92.8, Stoch 99.5) dan H1 (CCI 373). Struktur H4 masih sideways dengan cloud bearish, menandakan breakout ini terjadi melawan tren mayor jangka menengah. Sesi Asia dengan volume rendah meningkatkan probabilitas false breakout di zona resistensi kritis ini.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null
+    },
+    {
+      "timestamp": "2026-06-15T00:18:52.460Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 07.18.34",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4302.9,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "NEUTRAL"
+      },
+      "confluence_score": 3,
+      "market_context": "Harga XAUUSD ($4302.90) sedang menguji resistensi dinamis kritis EMA 50 H4 (4303.47) dan Upper Bollinger Band H4 (4297.05) dalam kondisi overbought ekstrem di semua timeframe intraday. Sesi Asia dengan volume rendah meningkatkan risiko false breakout di level kunci ini.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null
+    },
+    {
       "timestamp": "2026-06-15T00:18:20.508Z",
       "timeWib": "Senin, 15 Juni 2026 pukul 07.18.01",
       "decision": "WAIT",
@@ -77,9 +113,10 @@
     "wins": 0,
     "losses": 0,
     "totalSignals": 0,
-    "totalAnalyses": 4,
-    "waitCount": 4,
+    "totalAnalyses": 6,
+    "waitCount": 6,
     "lastMarketPhases": [
+      "VOLATILE",
       "VOLATILE",
       "VOLATILE",
       "VOLATILE",
@@ -89,8 +126,9 @@
       "NEUTRAL",
       "NEUTRAL",
       "NEUTRAL",
+      "NEUTRAL",
       "NEUTRAL"
     ]
   },
-  "savedAt": "2026-06-15T00:18:22.508Z"
+  "savedAt": "2026-06-15T00:20:24.892Z"
 }
