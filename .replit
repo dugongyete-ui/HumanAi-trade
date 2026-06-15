@@ -39,3 +39,5 @@ TELEGRAM_CHAT_ID = "7390867903"
 AI_API_KEY = "sk-dzeck-1ee392d1f9ff4d317c6a4c311e84efa0he"
 AI_API_URL = "https://qwn-api--miok1qpgd.replit.app/v1/chat/completions"
 AI_MODEL = "qwen3.7-max"
+
+[nix]
