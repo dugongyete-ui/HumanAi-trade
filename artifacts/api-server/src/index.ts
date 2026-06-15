@@ -1,7 +1,7 @@
 import app from "./app.js";
 import { logger } from "./lib/logger.js";
 import { initTelegram, registerCommands } from "./lib/telegram.js";
-import { startBot, pauseBot, resumeBot, runAnalysis, getBotStatus } from "./lib/scheduler.js";
+import { startBot, pauseBot, resumeBot, runAnalysis, getBotStatus, runChatAnalysis } from "./lib/scheduler.js";
 
 const rawPort = process.env["PORT"];
 
@@ -29,7 +29,8 @@ app.listen(port, (err) => {
       () => runAnalysis(),
       () => getBotStatus(),
       () => pauseBot(),
-      () => resumeBot()
+      () => resumeBot(),
+      (query) => runChatAnalysis(query)
     );
     logger.info("Telegram commands registered");
   }

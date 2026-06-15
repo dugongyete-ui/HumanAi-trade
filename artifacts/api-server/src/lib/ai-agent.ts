@@ -608,26 +608,85 @@ function getMarketCloseWarning(): string | null {
   return null;
 }
 
-// ─── Main Analysis Function ────────────────────────────────────────────────────
+// ─── On-Demand Signal Type ─────────────────────────────────────────────────────
 
-export async function analyzeMarket(
+export interface OnDemandSignal extends AISignal {
+  setup_type: "IMMEDIATE_ENTRY" | "PENDING_SETUP" | "NO_SETUP";
+  pending_order_type: "BUY_LIMIT" | "SELL_LIMIT" | "BUY_STOP" | "SELL_STOP" | null;
+  pending_trigger: string | null;
+  strategy_label: string;
+}
+
+// ─── Chat Addendum Prompt ──────────────────────────────────────────────────────
+
+function buildChatAddendum(userQuery: string): string {
+  return `## 🗣️ MODE ON-DEMAND — PERMINTAAN LANGSUNG DARI USER
+
+Ini BUKAN siklus otomatis 5 menit. User baru saja meminta analisis secara
+aktif melalui Telegram dengan permintaan berikut (tulis bebas — interpretasikan
+sendiri gaya/strategi yang dimaksud, lalu rancang sendiri pendekatan analisis
+yang sesuai: timeframe mana yang paling relevan dijadikan fokus, seberapa
+ketat SL/TP, dst. JANGAN mengikuti template atau aturan kaku berdasarkan
+kata kunci — gunakan penalaran Anda sendiri seperti trader manusia yang
+ditanya langsung oleh kliennya):
+
+> "${userQuery}"
+
+### Perbedaan dari Mode Otomatis
+
+Pada siklus otomatis, jika tidak ada konfluensi kuat, jawaban "WAIT" tanpa
+arah lebih lanjut sudah cukup. Tapi sekarang user secara AKTIF bertanya dan
+menunggu jawaban — seorang trader profesional yang ditanya langsung tidak
+akan menjawab "saya tidak tahu" begitu saja kalau dia punya pandangan apapun
+soal arah pasar. Karena itu, JANGAN berhenti di "WAIT" kosong. Pilih SALAH
+SATU dari tiga jenis respons berikut untuk field baru "setup_type":
+
+1. **IMMEDIATE_ENTRY**
+   Kondisi SEKARANG sudah layak entry — sama seperti BUY/SELL pada mode
+   otomatis. ATURAN KERAS #8 (confidence ≥ 0.60, confluence_score ≥ 5,
+   R:R ≥ 1.5) TETAP BERLAKU PENUH untuk pilihan ini.
+
+2. **PENDING_SETUP**
+   Belum layak entry SEKARANG, tapi Anda punya pandangan jelas tentang LEVEL
+   HARGA SPESIFIK di mana setup ini akan menjadi valid. Field "entry_price"
+   diisi LEVEL PENDING tersebut (boleh jauh dari harga sekarang — TIDAK
+   terikat batas deviasi 1.5%). TP dan SL dihitung relatif terhadap level
+   pending ini.
+
+3. **NO_SETUP**
+   HANYA jika pasar benar-benar tidak terbaca sama sekali — sangat choppy,
+   tanpa struktur, tanpa bias yang masuk akal. Ini harus jarang terjadi.
+
+### Field Tambahan WAJIB di Output JSON
+
+- **"setup_type"**: "IMMEDIATE_ENTRY" | "PENDING_SETUP" | "NO_SETUP"
+- **"pending_order_type"**: "BUY_LIMIT" | "SELL_LIMIT" | "BUY_STOP" | "SELL_STOP" | null
+  (isi hanya jika PENDING_SETUP, sesuai posisi entry vs harga sekarang)
+- **"pending_trigger"**: string | null
+  (kondisi konfirmasi spesifik yang masih harus terjadi sebelum entry valid)
+- **"strategy_label"**: string
+  (satu kalimat gaya analisis yang Anda pilih, misal: "Scalping M5/M15, target 10-20 pips, SL ketat")
+
+Untuk IMMEDIATE_ENTRY dan PENDING_SETUP, "decision" tetap "BUY" atau "SELL".
+Untuk NO_SETUP, "decision" = "WAIT" dan semua field harga = null.
+
+---
+
+Berdasarkan semua konteks di atas (memori, kalender ekonomi, data pasar,
+DAN permintaan user di atas), jawab permintaan user sekarang dalam format
+JSON yang diperluas ini.`;
+}
+
+// ─── Shared Context Builder ────────────────────────────────────────────────────
+
+function buildSensoryDataWithMeta(
   timeframes: TimeframeData[],
   currentPrice: number,
-  tick: { bid: number; ask: number; quote: number; epoch: number },
-  usdProxy: USDProxy | null
-): Promise<AISignal> {
-  const now = new Date();
-  const wibTime = now.toLocaleString("id-ID", {
-    timeZone: "Asia/Jakarta",
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-
+  tick: { bid: number; ask: number },
+  usdProxy: USDProxy | null,
+  wibTime: string,
+  now: Date
+): object {
   const spread = parseFloat((tick.ask - tick.bid).toFixed(2));
   const sensoryData = {
     symbol: "XAUUSD",
@@ -656,53 +715,15 @@ export async function analyzeMarket(
         ema_200: tf.ema_200?.toFixed(2),
         rsi_14: tf.rsi_14?.toFixed(2),
         rsi_condition: tf.rsi_condition,
-        macd: tf.macd
-          ? {
-              line: tf.macd.macd.toFixed(4),
-              signal: tf.macd.signal.toFixed(4),
-              histogram: tf.macd.histogram.toFixed(4),
-            }
-          : null,
+        macd: tf.macd ? { line: tf.macd.macd.toFixed(4), signal: tf.macd.signal.toFixed(4), histogram: tf.macd.histogram.toFixed(4) } : null,
         macd_signal: tf.macd_signal,
-        bollinger_bands: tf.bollinger
-          ? {
-              upper: tf.bollinger.upper.toFixed(2),
-              middle: tf.bollinger.middle.toFixed(2),
-              lower: tf.bollinger.lower.toFixed(2),
-              bandwidth: tf.bollinger.bandwidth.toFixed(4),
-            }
-          : null,
+        bollinger_bands: tf.bollinger ? { upper: tf.bollinger.upper.toFixed(2), middle: tf.bollinger.middle.toFixed(2), lower: tf.bollinger.lower.toFixed(2), bandwidth: tf.bollinger.bandwidth.toFixed(4) } : null,
         bb_price_position: tf.bb_position,
         atr_14: tf.atr_14?.toFixed(2),
-        stochastic: tf.stochastic
-          ? { k: tf.stochastic.k.toFixed(2), d: tf.stochastic.d.toFixed(2) }
-          : null,
+        stochastic: tf.stochastic ? { k: tf.stochastic.k.toFixed(2), d: tf.stochastic.d.toFixed(2) } : null,
         stochastic_condition: tf.stoch_condition,
-        ichimoku: tf.ichimoku
-          ? {
-              tenkan: tf.ichimoku.tenkan?.toFixed(2),
-              kijun: tf.ichimoku.kijun?.toFixed(2),
-              senkou_a: tf.ichimoku.senkou_a?.toFixed(2),
-              senkou_b: tf.ichimoku.senkou_b?.toFixed(2),
-              cloud_color: tf.ichimoku.cloud_color,
-              price_vs_cloud: tf.ichimoku.price_vs_cloud,
-              tenkan_kijun_cross: tf.ichimoku.tenkan_kijun_cross,
-            }
-          : null,
-        fibonacci: tf.fibonacci
-          ? {
-              swing_high: tf.fibonacci.swing_high.toFixed(2),
-              swing_low: tf.fibonacci.swing_low.toFixed(2),
-              trend: tf.fibonacci.trend,
-              level_236: tf.fibonacci.level_236.toFixed(2),
-              level_382: tf.fibonacci.level_382.toFixed(2),
-              level_500: tf.fibonacci.level_500.toFixed(2),
-              level_618: tf.fibonacci.level_618.toFixed(2),
-              level_786: tf.fibonacci.level_786.toFixed(2),
-              nearest_level: tf.fibonacci.nearest_level,
-              price_zone: tf.fibonacci.price_zone,
-            }
-          : null,
+        ichimoku: tf.ichimoku ? { tenkan: tf.ichimoku.tenkan?.toFixed(2), kijun: tf.ichimoku.kijun?.toFixed(2), senkou_a: tf.ichimoku.senkou_a?.toFixed(2), senkou_b: tf.ichimoku.senkou_b?.toFixed(2), cloud_color: tf.ichimoku.cloud_color, price_vs_cloud: tf.ichimoku.price_vs_cloud, tenkan_kijun_cross: tf.ichimoku.tenkan_kijun_cross } : null,
+        fibonacci: tf.fibonacci ? { swing_high: tf.fibonacci.swing_high.toFixed(2), swing_low: tf.fibonacci.swing_low.toFixed(2), trend: tf.fibonacci.trend, level_236: tf.fibonacci.level_236.toFixed(2), level_382: tf.fibonacci.level_382.toFixed(2), level_500: tf.fibonacci.level_500.toFixed(2), level_618: tf.fibonacci.level_618.toFixed(2), level_786: tf.fibonacci.level_786.toFixed(2), nearest_level: tf.fibonacci.nearest_level, price_zone: tf.fibonacci.price_zone } : null,
         williams_r: tf.williams_r?.toFixed(2),
         williams_r_condition: tf.williams_r_condition,
         cci_20: tf.cci_20?.toFixed(2),
@@ -716,68 +737,79 @@ export async function analyzeMarket(
     })),
   };
 
-  // Compute streaks from recent memory — turns history list into explicit numeric awareness
   const recentMem = memory.slice(0, 10);
   let waitStreak = 0;
-  for (const m of recentMem) {
-    if (m.decision === "WAIT") waitStreak++;
-    else break;
-  }
+  for (const m of recentMem) { if (m.decision === "WAIT") waitStreak++; else break; }
   const latestBiasH4 = recentMem[0]?.bias?.H4 ?? "NEUTRAL";
   let biasH4Streak = 0;
-  for (const m of recentMem) {
-    if (m.bias?.H4 === latestBiasH4) biasH4Streak++;
-    else break;
-  }
-  const sensoryDataWithMeta = {
+  for (const m of recentMem) { if (m.bias?.H4 === latestBiasH4) biasH4Streak++; else break; }
+
+  return {
     ...sensoryData,
     analysis_meta: {
       wait_streak_consecutive: waitStreak,
       h4_bias_persistence: `${latestBiasH4} bertahan ${biasH4Streak} siklus berturut-turut`,
     },
   };
+}
 
-  // Fetch news calendar (non-blocking — fallback to empty if fails)
-  const calendarCtx = await getCalendarContext().catch(() => null);
-  const calendarSection = calendarCtx ? formatCalendarForAI(calendarCtx) : "";
-
-  // Build the full user message: memory + news + market data
+function buildContextParts(sensoryDataWithMeta: object, calendarSection: string): string[] {
   const memoryContext = buildMemoryContext();
   const marketDataSection = `## 📡 DATA PASAR REAL-TIME SAAT INI\n\n${JSON.stringify(sensoryDataWithMeta, null, 2)}`;
-
   const parts: string[] = [];
   if (memoryContext) parts.push(memoryContext);
   if (calendarSection) parts.push(calendarSection);
   parts.push(marketDataSection);
-  parts.push("---\n\nBerdasarkan semua konteks di atas (memori, kalender ekonomi, dan data pasar), berikan analisis dan keputusan trading Atlas sekarang:");
+  return parts;
+}
 
-  const userMessage = parts.join("\n\n---\n\n");
-
+async function callAI(userMessage: string): Promise<string> {
   const response = await fetch(AI_API_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${AI_API_KEY}`,
-    },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${AI_API_KEY}` },
     body: JSON.stringify({
       model: AI_MODEL,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userMessage },
-      ],
+      messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: userMessage }],
       stream: false,
       temperature: 0.3,
     }),
   });
-
   if (!response.ok) {
     const errText = await response.text();
     throw new Error(`AI API error ${response.status}: ${errText}`);
   }
-
   const data = (await response.json()) as { choices: Array<{ message: { content: string } }> };
-  const content = data.choices[0]?.message?.content ?? "";
+  return data.choices[0]?.message?.content ?? "";
+}
 
+// ─── Main Analysis Function ────────────────────────────────────────────────────
+
+export async function analyzeMarket(
+  timeframes: TimeframeData[],
+  currentPrice: number,
+  tick: { bid: number; ask: number; quote: number; epoch: number },
+  usdProxy: USDProxy | null
+): Promise<AISignal> {
+  const now = new Date();
+  const wibTime = now.toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+  const sensoryDataWithMeta = buildSensoryDataWithMeta(timeframes, currentPrice, tick, usdProxy, wibTime, now);
+  const calendarCtx = await getCalendarContext().catch(() => null);
+  const calendarSection = calendarCtx ? formatCalendarForAI(calendarCtx) : "";
+  const parts = buildContextParts(sensoryDataWithMeta, calendarSection);
+  parts.push("---\n\nBerdasarkan semua konteks di atas (memori, kalender ekonomi, dan data pasar), berikan analisis dan keputusan trading Atlas sekarang:");
+  const userMessage = parts.join("\n\n---\n\n");
+
+  const content = await callAI(userMessage);
   const jsonMatch = content.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
     logger.error({ content }, "AI returned non-JSON response");
@@ -785,17 +817,8 @@ export async function analyzeMarket(
   }
 
   const parsed = JSON.parse(jsonMatch[0]) as AISignal;
-
-  if (!["BUY", "SELL", "WAIT"].includes(parsed.decision)) {
-    throw new Error(`Invalid decision: ${parsed.decision}`);
-  }
-
-  if (parsed.decision === "WAIT") {
-    parsed.entry_price = null;
-    parsed.take_profit = null;
-    parsed.stop_loss = null;
-    parsed.risk_reward_ratio = null;
-  }
+  if (!["BUY", "SELL", "WAIT"].includes(parsed.decision)) throw new Error(`Invalid decision: ${parsed.decision}`);
+  if (parsed.decision === "WAIT") { parsed.entry_price = null; parsed.take_profit = null; parsed.stop_loss = null; parsed.risk_reward_ratio = null; }
 
   parsed.confidence = Math.max(0, Math.min(1, parsed.confidence));
   parsed.confluence_score = Math.max(0, Math.min(10, parsed.confluence_score ?? 0));
@@ -808,37 +831,94 @@ export async function analyzeMarket(
   parsed.what_would_change_my_mind ??= "-";
   parsed.lesson ??= "-";
 
-  // Sanity check — catch LLM geometry errors before they reach Telegram
   const validation = validateSignal(parsed, currentPrice);
   if (!validation.valid) {
-    logger.warn(
-      { reason: validation.reason, originalDecision: parsed.decision },
-      "Signal geometry invalid — forcing WAIT to prevent malformed trade"
-    );
-    parsed.decision = "WAIT";
-    parsed.entry_price = null;
-    parsed.take_profit = null;
-    parsed.stop_loss = null;
-    parsed.risk_reward_ratio = null;
+    logger.warn({ reason: validation.reason, originalDecision: parsed.decision }, "Signal geometry invalid — forcing WAIT");
+    parsed.decision = "WAIT"; parsed.entry_price = null; parsed.take_profit = null; parsed.stop_loss = null; parsed.risk_reward_ratio = null;
   }
 
-  // Record to memory AFTER successful parse
   recordAnalysis(parsed, currentPrice, wibTime);
 
-  // Apply long-term memory operations (ADD/UPDATE/DELETE) if AI returned any
   if (Array.isArray(parsed.long_term_memory_ops) && parsed.long_term_memory_ops.length > 0) {
     applyLTMOps(parsed.long_term_memory_ops);
-    logger.info(
-      { ops: parsed.long_term_memory_ops.map((o) => o.op) },
-      "Long-term memory updated by AI"
-    );
+    logger.info({ ops: parsed.long_term_memory_ops.map((o) => o.op) }, "Long-term memory updated by AI");
   }
 
-  logger.info(
-    { decision: parsed.decision, confidence: parsed.confidence, memoryEntries: memory.length },
-    "AI analysis complete (with memory context)"
-  );
+  logger.info({ decision: parsed.decision, confidence: parsed.confidence, memoryEntries: memory.length }, "AI analysis complete (with memory context)");
+  return parsed;
+}
 
+// ─── On-Demand Analysis Function (/chat) ──────────────────────────────────────
+
+export async function analyzeMarketOnDemand(
+  userQuery: string,
+  timeframes: TimeframeData[],
+  currentPrice: number,
+  tick: { bid: number; ask: number; quote: number; epoch: number },
+  usdProxy: USDProxy | null
+): Promise<OnDemandSignal> {
+  const now = new Date();
+  const wibTime = now.toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    weekday: "long", day: "2-digit", month: "long", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
+
+  const sensoryDataWithMeta = buildSensoryDataWithMeta(timeframes, currentPrice, tick, usdProxy, wibTime, now);
+  const calendarCtx = await getCalendarContext().catch(() => null);
+  const calendarSection = calendarCtx ? formatCalendarForAI(calendarCtx) : "";
+  const parts = buildContextParts(sensoryDataWithMeta, calendarSection);
+  parts.push(buildChatAddendum(userQuery));
+  const userMessage = parts.join("\n\n---\n\n");
+
+  const content = await callAI(userMessage);
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    logger.error({ content }, "AI returned non-JSON response (on-demand)");
+    throw new Error("AI did not return valid JSON");
+  }
+
+  const parsed = JSON.parse(jsonMatch[0]) as OnDemandSignal;
+  if (!["BUY", "SELL", "WAIT"].includes(parsed.decision)) throw new Error(`Invalid decision: ${parsed.decision}`);
+
+  parsed.setup_type ??= parsed.decision === "WAIT" ? "NO_SETUP" : "IMMEDIATE_ENTRY";
+  parsed.pending_order_type ??= null;
+  parsed.pending_trigger ??= null;
+  parsed.strategy_label ??= "-";
+  parsed.confidence = Math.max(0, Math.min(1, parsed.confidence));
+  parsed.confluence_score = Math.max(0, Math.min(10, parsed.confluence_score ?? 0));
+  parsed.timeframe_bias ??= { H4: "NEUTRAL", H1: "NEUTRAL", M15: "NEUTRAL" };
+  parsed.key_levels ??= { nearest_resistance: null, nearest_support: null };
+  parsed.market_phase ??= "RANGING";
+  parsed.invalidation ??= "-";
+  parsed.bull_case ??= "-";
+  parsed.bear_case ??= "-";
+  parsed.what_would_change_my_mind ??= "-";
+  parsed.lesson ??= "-";
+
+  if (parsed.setup_type === "NO_SETUP") {
+    parsed.decision = "WAIT";
+    parsed.entry_price = null; parsed.take_profit = null;
+    parsed.stop_loss = null; parsed.risk_reward_ratio = null;
+  } else {
+    // Geometry check still applies (SL/TP side relative to entry)
+    const validation = validateSignal(parsed, currentPrice);
+    if (!validation.valid) {
+      logger.warn({ reason: validation.reason }, "On-demand signal geometry invalid — downgrading to NO_SETUP");
+      parsed.setup_type = "NO_SETUP";
+      parsed.decision = "WAIT";
+      parsed.entry_price = null; parsed.take_profit = null;
+      parsed.stop_loss = null; parsed.risk_reward_ratio = null;
+    }
+  }
+
+  // Apply long-term memory ops if any
+  if (Array.isArray(parsed.long_term_memory_ops) && parsed.long_term_memory_ops.length > 0) {
+    applyLTMOps(parsed.long_term_memory_ops);
+    logger.info({ ops: parsed.long_term_memory_ops.map((o) => o.op) }, "Long-term memory updated by AI (on-demand)");
+  }
+
+  logger.info({ setup_type: parsed.setup_type, decision: parsed.decision, confidence: parsed.confidence }, "AI on-demand analysis complete");
   return parsed;
 }
 

@@ -1,6 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
 import { logger } from "./logger.js";
 import { getSignals, type Signal } from "./signal-store.js";
+import type { OnDemandSignal } from "./ai-agent.js";
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID ?? "";
@@ -312,13 +313,112 @@ export function formatResult(
   );
 }
 
-// ─── Commands ─────────────────────────────────────────────────────────────────
+// ─── On-Demand Chat Signal Formatter ─────────────────────────────────────────
+
+export function formatChatSignal(s: OnDemandSignal, userQuery: string): string {
+  const now = new Date().toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta", day: "2-digit", month: "short",
+    hour: "2-digit", minute: "2-digit",
+  });
+
+  const setupEmoji =
+    s.setup_type === "IMMEDIATE_ENTRY" ? "⚡" :
+    s.setup_type === "PENDING_SETUP" ? "⏳" : "🔍";
+
+  const setupLabel =
+    s.setup_type === "IMMEDIATE_ENTRY" ? "ENTRY SEKARANG" :
+    s.setup_type === "PENDING_SETUP" ? "PENDING SETUP" : "TIDAK ADA SETUP";
+
+  const dirEmoji = s.decision === "BUY" ? "🟢" : s.decision === "SELL" ? "🔴" : "⏸️";
+  const confPct = Math.round(s.confidence * 100);
+  const confBar = confPct >= 80 ? "🔥" : confPct >= 65 ? "✅" : confPct >= 50 ? "⚡" : "⚠️";
+
+  let header = `🗣️ <b>ATLAS — ANALISIS ON-DEMAND</b>\n`;
+  header += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  header += `📝 <i>"${esc(userQuery)}"</i>\n`;
+  if (s.strategy_label && s.strategy_label !== "-") {
+    header += `🎯 Strategi: <b>${esc(s.strategy_label)}</b>\n`;
+  }
+  header += `\n${setupEmoji} <b>${setupLabel}</b>  ${dirEmoji} ${s.decision}\n`;
+  header += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+  if (s.setup_type === "NO_SETUP") {
+    let body = header;
+    body += `\n📊 Fase: <b>${esc(s.market_phase)}</b>\n`;
+    body += `🧠 Reasoning:\n${esc(s.reasoning)}\n\n`;
+    if (s.what_would_change_my_mind && s.what_would_change_my_mind !== "-") {
+      body += `🔄 <b>Yang perlu terjadi:</b>\n${esc(s.what_would_change_my_mind)}\n\n`;
+    }
+    body += `⏰ ${now} WIB`;
+    return body;
+  }
+
+  // IMMEDIATE_ENTRY or PENDING_SETUP
+  let body = header;
+  body += `\n📊 Fase: <b>${esc(s.market_phase)}</b>  |  Konfiden: <b>${confPct}%</b> ${confBar}\n`;
+  body += `⚖️ Konfluensi: <b>${s.confluence_score ?? "-"}/10</b>\n`;
+
+  if (s.setup_type === "PENDING_SETUP") {
+    const orderTypeLabel: Record<string, string> = {
+      BUY_LIMIT: "BUY LIMIT ↙️ (tunggu harga turun ke level ini)",
+      SELL_LIMIT: "SELL LIMIT ↗️ (tunggu harga naik ke level ini)",
+      BUY_STOP: "BUY STOP ↗️ (tunggu breakout naik)",
+      SELL_STOP: "SELL STOP ↙️ (tunggu breakout turun)",
+    };
+    const orderLabel = s.pending_order_type ? (orderTypeLabel[s.pending_order_type] ?? s.pending_order_type) : "-";
+    body += `\n📋 Order: <b>${orderLabel}</b>\n`;
+    body += `💰 Level Entry Pending: <b>$${s.entry_price?.toFixed(2) ?? "-"}</b>\n`;
+    body += `🎯 TP: <b>$${s.take_profit?.toFixed(2) ?? "-"}</b>  🛑 SL: <b>$${s.stop_loss?.toFixed(2) ?? "-"}</b>\n`;
+    const rr = s.risk_reward_ratio?.toFixed(2) ?? "-";
+    body += `📐 R:R = <b>${rr}</b>\n`;
+    if (s.pending_trigger && s.pending_trigger !== "-") {
+      body += `\n🔔 <b>Konfirmasi diperlukan:</b>\n${esc(s.pending_trigger)}\n`;
+    }
+  } else {
+    // IMMEDIATE_ENTRY
+    body += `\n💰 Entry: <b>$${s.entry_price?.toFixed(2) ?? "-"}</b>\n`;
+    body += `🎯 TP: <b>$${s.take_profit?.toFixed(2) ?? "-"}</b>  🛑 SL: <b>$${s.stop_loss?.toFixed(2) ?? "-"}</b>\n`;
+    const rr = s.risk_reward_ratio?.toFixed(2) ?? "-";
+    body += `📐 R:R = <b>${rr}</b>\n`;
+  }
+
+  body += `\n🧠 Reasoning:\n${esc(s.reasoning)}\n`;
+
+  const bullCase = s.bull_case && s.bull_case !== "-" ? s.bull_case : null;
+  const bearCase = s.bear_case && s.bear_case !== "-" ? s.bear_case : null;
+  if (bullCase || bearCase) {
+    body += `\n`;
+    if (bullCase) body += `🐂 Bull: ${esc(bullCase)}\n`;
+    if (bearCase) body += `🐻 Bear: ${esc(bearCase)}\n`;
+  }
+
+  if (s.invalidation && s.invalidation !== "-") {
+    body += `\n❌ Invalidasi: ${esc(s.invalidation)}\n`;
+  }
+
+  if (s.what_would_change_my_mind && s.what_would_change_my_mind !== "-") {
+    body += `🔄 Ubah pandangan jika: ${esc(s.what_would_change_my_mind)}\n`;
+  }
+
+  const supportLevels = s.key_levels?.nearest_support;
+  const resistanceLevels = s.key_levels?.nearest_resistance;
+  if (supportLevels || resistanceLevels) {
+    body += `\n📍 Support: <b>$${supportLevels ?? "-"}</b>  Resist: <b>$${resistanceLevels ?? "-"}</b>\n`;
+  }
+
+  body += `\n⚠️ <i>On-demand — bukan sinyal resmi bot. Selalu kelola risiko sendiri.</i>\n`;
+  body += `⏰ ${now} WIB`;
+  return body;
+}
+
+// ─── Command Registration ─────────────────────────────────────────────────────
 
 export function registerCommands(
   onAnalyze: () => Promise<Signal | null>,
   onStatus: () => object,
   onPause: () => void,
-  onResume: () => void
+  onResume: () => void,
+  onChat: (query: string) => Promise<OnDemandSignal>
 ): void {
   if (!bot) return;
 
@@ -328,14 +428,41 @@ export function registerCommands(
       `🤖 <b>XAUUSD AI Trading Bot — Atlas</b>\n\n` +
         `Bot otonom yang menganalisis pasar emas setiap 5 menit menggunakan AI multi-timeframe.\n\n` +
         `<b>Perintah tersedia:</b>\n` +
-        `/analyze — Analisis pasar sekarang\n` +
+        `/analyze — Analisis pasar sekarang (mode otomatis)\n` +
+        `/chat [pertanyaan] — Tanya Atlas langsung (analisis on-demand)\n` +
         `/status — Status bot, mode, sinyal aktif, win rate\n` +
         `/history — Riwayat 5 sinyal terakhir\n` +
         `/pause — Hentikan analisis otomatis\n` +
         `/resume — Lanjutkan analisis otomatis\n` +
-        `/help — Tampilkan bantuan ini`,
+        `/help — Tampilkan bantuan ini\n\n` +
+        `💡 <b>Contoh /chat:</b>\n` +
+        `<code>/chat cari setup sell terbaik saat ini</code>\n` +
+        `<code>/chat ada peluang scalping hari ini?</code>\n` +
+        `<code>/chat level support kuat di mana?</code>`,
       chatId
     );
+  });
+
+  bot.onText(/\/chat(?:\s+(.+))?/, async (msg, match) => {
+    const chatId = msg.chat.id.toString();
+    const userQuery = match?.[1]?.trim() || "Cari peluang trading terbaik saat ini";
+    await sendMessage(`⏳ <b>Atlas sedang menganalisis...</b>\n📝 <i>"${esc(userQuery)}"</i>`, chatId);
+    try {
+      const signal = await onChat(userQuery);
+      await sendMessage(formatChatSignal(signal, userQuery), chatId);
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Unknown error";
+      if (errMsg === "market_closed" || errMsg.toLowerCase().includes("closed")) {
+        await sendMessage(
+          "🔒 <b>Pasar XAUUSD Sedang Tutup</b>\n\n" +
+            "Analisis on-demand tidak tersedia saat pasar tutup.\n" +
+            "📅 Buka kembali: Senin – Jumat mulai <b>07:00 WIB</b>.",
+          chatId
+        );
+      } else {
+        await sendMessage(`❌ Analisis gagal: ${esc(errMsg)}`, chatId);
+      }
+    }
   });
 
   bot.onText(/\/analyze/, async (msg) => {

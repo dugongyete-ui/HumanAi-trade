@@ -1,7 +1,7 @@
 import cron from "node-cron";
 import { fetchCandles, fetchCurrentTick, checkMarketOpen, fetchUSDProxy, GRANULARITY, type USDProxy } from "./deriv-client.js";
 import { buildTimeframeData } from "./indicators.js";
-import { analyzeMarket, recordSignalResult as recordMemoryResult } from "./ai-agent.js";
+import { analyzeMarket, analyzeMarketOnDemand, recordSignalResult as recordMemoryResult, type OnDemandSignal } from "./ai-agent.js";
 import {
   storeSignal, updateSignalResult, getSignals, getLastSignal,
   getTotalCount, getWinRate, type Signal,
@@ -338,6 +338,45 @@ async function _runAnalysisInternal(): Promise<Signal | null> {
   }
 
   return signal;
+}
+
+// ─── On-Demand Chat Analysis (/chat) ─────────────────────────────────────────
+
+export async function runChatAnalysis(userQuery: string): Promise<OnDemandSignal> {
+  const isOpen = await cachedMarketOpen();
+  if (!isOpen) throw new MarketClosedError();
+
+  const [candlesM5, candlesM15, candlesH1, candlesH4, candlesD1, tick, usdProxy] = await Promise.all([
+    fetchCandles(GRANULARITY.M5, 100),
+    fetchCandles(GRANULARITY.M15, 100),
+    fetchCandles(GRANULARITY.H1, 100),
+    fetchCandles(GRANULARITY.H4, 100),
+    fetchCandles(GRANULARITY.D1, 50),
+    fetchCurrentTick(),
+    fetchUSDProxy().catch((err): USDProxy => {
+      logger.warn({ err }, "USD proxy fetch failed — using neutral fallback (chat)");
+      return {
+        symbol: "USD (data tidak tersedia)",
+        trend: "USD_NEUTRAL",
+        interpretation: "Data USD tidak tersedia saat ini — abaikan faktor USD dalam analisis ini",
+        last_close: 0,
+        change_pct_10h: 0,
+      };
+    }),
+  ]);
+
+  const timeframes = [
+    buildTimeframeData("M5", candlesM5),
+    buildTimeframeData("M15", candlesM15),
+    buildTimeframeData("H1", candlesH1),
+    buildTimeframeData("H4", candlesH4),
+    buildTimeframeData("D1", candlesD1),
+  ];
+
+  const currentPrice = tick.quote;
+  logger.info({ price: currentPrice, query: userQuery }, "Market data fetched for /chat");
+
+  return analyzeMarketOnDemand(userQuery, timeframes, currentPrice, tick, usdProxy);
 }
 
 // ─── Bot Lifecycle ────────────────────────────────────────────────────────────
