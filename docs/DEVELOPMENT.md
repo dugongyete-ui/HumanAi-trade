@@ -158,7 +158,7 @@ artifacts/api-server/src/lib/
 | Bot tidak respon command Telegram | Cek `TELEGRAM_BOT_TOKEN` valid, cek polling error di log |
 | Server tidur di Replit free tier | Setup UptimeRobot ping `/api/healthz` setiap 5 menit |
 | Memori AI reset | Normal setelah restart — memori in-memory. Implementasi persistent JSON jika perlu |
-| `DATABASE_URL` error | `@workspace/db` butuh ini — provision via Replit Database atau comment import |
+| `DATABASE_URL` error | `@workspace/db` tidak dipakai aktif — sudah dihapus dari dependensi api-server |
 
 ---
 

@@ -108,7 +108,7 @@ AI menerima sebelum analisis:
 ## Gotchas
 
 - `market is closed` log setiap menit weekend = **NORMAL**, bukan error
-- `DATABASE_URL` dibutuhkan `@workspace/db` — tidak dipakai aktif tapi di-import transitif
+- `DATABASE_URL` — `@workspace/db` tidak dipakai aktif dan sudah dihapus dari dependensi api-server
 - Replit free tier: server tidur setelah ~10 menit idle → setup UptimeRobot ping `/api/healthz` setiap 5 menit
 - Memori AI & sinyal reset saat server restart (in-memory)
 - Jangan akses port langsung (8080, 23183) — gunakan `localhost:80/api/...`
