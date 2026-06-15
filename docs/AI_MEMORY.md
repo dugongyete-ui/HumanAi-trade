@@ -9,7 +9,26 @@ LLM (Large Language Model) secara default adalah **stateless** — setiap panggi
 - AI tidak bisa mendeteksi perubahan bias pasar secara bertahap
 - AI tidak bisa belajar dari hasil WIN/LOSS sebelumnya
 
-**Solusi**: Setiap siklus analisis, kita injek "paket memori" ke user message sebelum data pasar.
+**Solusi**: Setiap siklus analisis, kita injek "paket memori" ke user message sebelum data pasar. Ditambah, AI punya **long-term memory** yang ia kelola sendiri untuk insight yang berlaku lintas sesi.
+
+---
+
+## Dua Lapisan Memori
+
+### Short-Term Memory (Riwayat Siklus)
+- Menyimpan 20 siklus analisis terakhir
+- Di-inject setiap siklus sebagai konteks
+- Termasuk statistik agregat (win rate, bias H4 dominan, dll)
+- **Persist ke disk** (`data/memory.json`) — tidak hilang saat restart
+
+### Long-Term Memory (AI-Managed Notes)
+- AI menulis sendiri catatan permanen yang berlaku beberapa hari ke depan
+- Max 10 catatan aktif
+- AI bisa ADD / UPDATE / DELETE via field `long_term_memory_ops` dalam JSON output
+- Di-inject ke prompt sebagai "Catatan Permanen Atlas"
+- **Persist ke disk** (`data/ltm.json`)
+
+**File**: `artifacts/api-server/src/lib/ai-agent.ts`, `persistent-memory.ts`, `long-term-memory.ts`
 
 ---
 
@@ -43,6 +62,14 @@ interface SessionStats {
   lastMarketPhases: string[]; // rolling 5 terakhir
   lastBiasH4: string[];       // rolling 5 terakhir
 }
+
+// Long-term memory entry (AI-managed)
+interface LTMEntry {
+  id: string;                 // UUID
+  content: string;            // insight Atlas
+  createdAt: string;          // ISO UTC
+  updatedAt: string;          // ISO UTC
+}
 ```
 
 ---
@@ -55,6 +82,7 @@ Siklus 1:
   recordAnalysis(signal, price, timeWib)
   → memory[0] = { decision: "WAIT", confidence: 0.42, ... }
   → stats.totalAnalyses++, stats.waitCount++
+  → persist ke disk
 
 Siklus 2:
   analyzeMarket() → AI memberi WAIT
@@ -74,6 +102,10 @@ Siklus 4 (kembali ANALYZING):
   buildMemoryContext() menghasilkan teks yang menceritakan:
   "Siklus lalu BUY, WIN dengan exit $2358, sebelumnya 2x WAIT"
   → AI tahu konteks ini sebelum analisis baru
+
+AI dalam analisis baru bisa menulis long-term memory:
+  "long_term_memory_ops": [{"op":"ADD","content":"Support kuat $2335 sudah diuji 3x minggu ini"}]
+  → disimpan permanen, akan muncul di semua analisis berikutnya
 ```
 
 ---
@@ -81,6 +113,13 @@ Siklus 4 (kembali ANALYZING):
 ## Format Konteks yang Diinjek ke AI
 
 ```
+## 📌 CATATAN PERMANEN ATLAS
+
+1. [abc123] Support kuat $2335 sudah diuji 3x minggu ini — 12 Jun 2026
+2. [def456] FOMC meeting 18 Jun — ekspektasi hold, tapi perhatikan dot plot
+
+---
+
 ## 🧠 MEMORI ATLAS — Konteks & Ingatan Siklus Sebelumnya
 
 PENTING: Gunakan konteks di bawah ini untuk membuat analisis yang
@@ -88,7 +127,7 @@ KONSISTEN dan EVOLUSIONER, bukan analisis yang mulai dari nol.
 
 ### 📊 Statistik Sesi Ini:
 - Total analisis: 12 | Sinyal BUY/SELL: 3 | WAIT: 9
-- Hasil sinyal: 2 WIN / 1 LOSS → Win Rate: **67%**
+- Hasil sinyal: 2 WIN / 1 LOSS → Win Rate: 67%
 - Fase pasar 5 siklus terakhir: RANGING → RANGING → TRENDING_UP → TRENDING_UP → VOLATILE
 - Bias H4 dominan: NEUTRAL → NEUTRAL → BULLISH → BULLISH → BEARISH
 
@@ -113,30 +152,43 @@ KONSISTEN dan EVOLUSIONER, bukan analisis yang mulai dari nol.
 ## Urutan Konteks dalam User Message
 
 ```
-1. 🧠 MEMORI (10 siklus terakhir + stats + refleksi)
+1. 📌 LONG-TERM MEMORY (catatan permanen AI, max 10)
           ↓
-2. ⚠️ KALENDER EKONOMI (event hari ini + alert level)
+2. 🧠 SHORT-TERM MEMORY (10 siklus terakhir + stats + refleksi)
           ↓
-3. 📡 DATA PASAR REAL-TIME (harga + 4 timeframe + semua indikator)
+3. ⚠️ KALENDER EKONOMI (event hari ini + alert level)
           ↓
-4. Instruksi: "Berikan analisis dan keputusan trading Atlas sekarang"
+4. 📡 DATA PASAR REAL-TIME (harga + 4 timeframe + semua indikator + analysis_meta)
+          ↓
+5. Instruksi: "Berikan analisis dan keputusan trading Atlas sekarang"
 ```
+
+---
+
+## Long-Term Memory Operations
+
+AI mengelola LTM sendiri via field `long_term_memory_ops` dalam output JSON:
+
+```json
+{
+  "long_term_memory_ops": [
+    { "op": "ADD", "content": "Support kuat $3300 sudah diuji 3x — demand zone kuat" },
+    { "op": "UPDATE", "id": "abc123", "content": "Support $3300 sudah jebol — tidak valid lagi" },
+    { "op": "DELETE", "id": "def456" }
+  ]
+}
+```
+
+Kapasitas maks 10 catatan. AI diharapkan DELETE catatan lama sebelum ADD yang baru jika sudah penuh.
 
 ---
 
 ## Limitasi & Catatan
 
-### In-Memory (Reset saat restart)
-Memori disimpan di array JavaScript dalam RAM. Saat server restart:
-- Semua `MemoryEntry` hilang
-- `SessionStats` reset ke nol
-- AI mulai dari siklus pertama lagi
-
-**Jika ingin persistent**: Implementasi simpan/load `memory[]` dan `sessionStats` dari file JSON di disk (misal `data/memory.json`). Pattern:
-```typescript
-// Saat startup: baca dari file
-// Setelah setiap update: tulis ke file (debounced)
-```
+### Persistent (Tidak Reset saat Restart)
+Sejak implementasi `persistent-memory.ts`, memori disimpan ke file JSON:
+- `data/memory.json` — short-term memory (riwayat siklus + stats)
+- `data/ltm.json` — long-term memory (catatan permanen AI)
 
 ### Token Limit
 Setiap siklus analisis mengirim ~8.000–15.000 token ke LLM (memori + kalender + data pasar).

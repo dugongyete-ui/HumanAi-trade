@@ -1,4 +1,4 @@
-# BOT LOGIC — Atlas State Machine & AI Memory
+# BOT LOGIC — Atlas State Machine, AI Memory & On-Demand Chat
 
 ## State Machine
 
@@ -10,7 +10,7 @@ Bot beroperasi dalam 2 mode yang berpindah otomatis:
 │  Cron: */5 * * * * (setiap 5 menit)                    │
 │  Cek market buka → fetch 4 timeframe → hitung indikator │
 │  → inject memori + kalender → kirim ke LLM             │
-│  → BUY/SELL conf≥60%?                                  │
+│  → BUY/SELL conf≥60% + confluence≥5 + R:R≥1.5?        │
 │         YES ──────────────────────────────────────┐     │
 │         NO / WAIT → tetap ANALYZING               │     │
 └───────────────────────────────────────────────────│─────┘
@@ -32,22 +32,51 @@ Bot beroperasi dalam 2 mode yang berpindah otomatis:
 
 ---
 
+## On-Demand Analysis (`/chat` command)
+
+Selain analisis otomatis, user bisa minta analisis langsung via Telegram `/chat <pertanyaan>`.
+
+```
+User kirim /chat → analyzeMarketOnDemand() → CHAT_SYSTEM_PROMPT → AI
+                                                      ↓
+                           AI selalu beri BUY atau SELL (IMMEDIATE_ENTRY atau PENDING_SETUP)
+                                                      ↓
+                                formatChatSignal() → kirim ke Telegram
+```
+
+**Perbedaan penting dengan analisis otomatis:**
+
+| | **Auto (cron)** | **On-Demand (/chat)** |
+|---|---|---|
+| System prompt | `SYSTEM_PROMPT` (hard WAIT rules) | `CHAT_SYSTEM_PROMPT` (mentor mode) |
+| Boleh WAIT? | Ya (confidence < 60%) | Hampir tidak pernah |
+| Setup type | IMMEDIATE_ENTRY / NO_SETUP | IMMEDIATE_ENTRY / PENDING_SETUP |
+| Masuk MONITORING? | Ya (jika signal valid) | Tidak |
+| Tujuan | Trading otomatis | Panduan mentor untuk user |
+
+**Suppression window**: Jika user baru saja `/chat` (< 90 detik), scheduler akan skip pengiriman sinyal WAIT biasa ke Telegram untuk menghindari "noise" setelah chat analysis.
+
+---
+
 ## Threshold & Parameter
 
 | Parameter | Nilai | Keterangan |
 |---|---|---|
 | Confidence minimum | 60% | Di bawah ini → tidak kirim sinyal, tidak masuk MONITORING |
+| Confluence minimum | 5/10 | Di bawah ini → tidak kirim sinyal (auto mode) |
+| R:R minimum | 1.5 | Di bawah ini → tidak kirim sinyal (auto mode) |
 | Cron schedule | `*/5 * * * *` | Analisis setiap 5 menit |
 | Monitor interval | 10 detik | Cek TP/SL saat MONITORING |
-| Market cache TTL | 3 menit | Cache hasil `checkMarketOpen()` supaya tidak hit Deriv API setiap menit |
+| Chat suppression window | 90 detik | Skip WAIT broadcast setelah /chat |
+| Market cache TTL | 3 menit | Cache hasil `checkMarketOpen()` |
 | Calendar cache TTL | 1 jam | Cache ForexFactory feed |
-| Memory max entries | 20 | Simpan 20 siklus terakhir di RAM |
+| Memory max entries | 20 | Simpan 20 siklus terakhir (persisted ke disk) |
 
 ---
 
 ## AI Memory System
 
-**File**: `artifacts/api-server/src/lib/ai-agent.ts`
+**File**: `artifacts/api-server/src/lib/ai-agent.ts`, `persistent-memory.ts`
 
 Setiap siklus analisis, AI **bukan** mulai dari nol. AI menerima konteks:
 
@@ -75,6 +104,16 @@ Bias H4 dominan: NEUTRAL → NEUTRAL → BULLISH → BULLISH → BULLISH
 4. Apakah bias H4 berubah konsisten (tanda tren nyata)?
 5. Jika ≥3 WAIT berturut-turut — ada setup yang terlewat?
 
+### 4. Long-Term Memory (AI-Managed)
+AI bisa menyimpan catatan permanen antar sesi via field `long_term_memory_ops` dalam JSON output-nya:
+- `ADD` — tambah insight baru (max 10 catatan)
+- `UPDATE` — perbarui catatan yang ada (by ID)
+- `DELETE` — hapus catatan yang sudah tidak relevan
+
+Catatan ini di-inject kembali ke setiap prompt sebagai "Catatan Permanen Atlas".
+
+**File**: `artifacts/api-server/src/lib/long-term-memory.ts`
+
 ### Siklus Hidup Memori
 
 ```typescript
@@ -85,13 +124,15 @@ recordAnalysis(signal, currentPrice, wibTime)
 recordSignalResult("WIN" | "LOSS", exitPrice)
 ```
 
-**Catatan**: Memori bersifat in-memory (RAM). Reset saat server restart.
+**Catatan**: Short-term memory (riwayat siklus) dan long-term memory keduanya di-persist ke disk (`data/memory.json`, `data/ltm.json`). Tidak hilang saat server restart.
 
 ---
 
 ## Data yang Diterima AI Per Siklus
 
 ```
+[Long-term memory Atlas — catatan permanen AI]
+         +
 [Memori 10 siklus + statistik + refleksi diri]
          +
 [Kalender ekonomi: event hari ini, 4 jam ke depan, alert level]
@@ -106,6 +147,7 @@ recordSignalResult("WIN" | "LOSS", exitPrice)
   - Per timeframe: EMA20/50/200, RSI, MACD, BB, ATR, Stochastic,
     Ichimoku, Fibonacci, Williams %R, CCI, S/R levels,
     candlestick patterns
+  - analysis_meta: wait_streak, H4 bias persistence
 ```
 
 ---
@@ -148,6 +190,32 @@ Event yang dianggap relevan untuk XAUUSD:
 | CCI (20) | Divergence & kondisi ekstrem |
 | Support/Resistance | Level kritis dari swing high/low |
 | Candlestick Patterns | Hammer, Doji, Engulfing, dll |
+
+---
+
+## Signal Validation (Dua Jenis)
+
+**File**: `artifacts/api-server/src/lib/ai-agent.ts`
+
+### `validateSignal(signal, currentPrice)` — untuk IMMEDIATE_ENTRY
+Cek penuh: geometry SL/TP + proximity entry ke harga saat ini (±1.5%).
+Jika gagal proximity → di-salvage sebagai PENDING_SETUP, bukan dibuang.
+
+### `validateSignalGeometry(signal)` — untuk PENDING_SETUP
+Hanya cek SL/TP geometry (sisi yang benar). Tidak cek proximity — entry boleh jauh dari harga saat ini.
+
+### Fallback Chain (On-Demand `/chat`)
+```
+AI returns NO_SETUP / PENDING_SETUP dengan null prices
+        ↓
+Cek key_levels + timeframe_bias
+        ↓
+Ada bias + support/resistance? → Auto-build PENDING_SETUP
+  - BULLISH bias → BUY_LIMIT at nearest_support
+  - BEARISH bias → SELL_LIMIT at nearest_resistance
+        ↓
+Tidak ada data sama sekali? → WAIT (sangat jarang, < 1% kasus)
+```
 
 ---
 
@@ -198,7 +266,9 @@ Commands:
 - `/status` — tampilkan mode, sinyal aktif, win rate, next analysis
 - `/pause` — jeda analisis otomatis
 - `/resume` — lanjutkan analisis otomatis
+- `/chat <pertanyaan>` — minta panduan trading langsung dari Atlas (mentor mode, selalu beri BUY/SELL)
 
-Format sinyal dikirim ke Telegram:
-- `formatSignal(signal)` — pesan BUY/SELL/WAIT lengkap
+Format pesan Telegram:
+- `formatSignal(signal)` — pesan BUY/SELL/WAIT otomatis
+- `formatChatSignal(signal)` — pesan on-demand `/chat` (termasuk pending_order_type, pending_trigger)
 - `formatResult(signal, result, exitPrice)` — pesan WIN/LOSS setelah TP/SL

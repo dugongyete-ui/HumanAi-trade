@@ -56,7 +56,7 @@ pnpm run typecheck:libs
 2. Tambah field baru ke `TimeframeData` interface
 3. Implementasi kalkulasi di fungsi `buildTimeframeData()`
 4. Tambah field ke `sensoryData` di `ai-agent.ts` (bagian `indicators` per timeframe)
-5. Update system prompt di `ai-agent.ts` section 5 (tabel Interpretasi Indikator)
+5. Update section tabel indikator di kedua system prompt: `SYSTEM_PROMPT` dan `CHAT_SYSTEM_PROMPT`
 
 ---
 
@@ -88,19 +88,22 @@ const CONFIDENCE_THRESHOLD = 0.60;  // ubah ini
 const MONITOR_INTERVAL_MS = 10_000;  // 10 detik, ubah ini
 ```
 
+### Ubah chat suppression window
+```typescript
+const CHAT_SUPPRESSION_MS = 90_000;  // 90 detik, ubah ini
+// Di scheduler.ts — durasi setelah /chat dimana WAIT otomatis tidak dikirim ke Telegram
+```
+
 ### Ubah persona/instruksi AI
 File: `artifacts/api-server/src/lib/ai-agent.ts`
-- `SYSTEM_PROMPT` — persona dan aturan keras AI
+- `SYSTEM_PROMPT` — persona dan aturan keras AI untuk analisis auto (cron)
+- `CHAT_SYSTEM_PROMPT` — persona mentor AI untuk `/chat` on-demand (tidak ada hard WAIT rules)
 - `buildMemoryContext()` — apa yang diingat AI antar siklus
 - `formatCalendarForAI()` di `news-calendar.ts` — cara instruksi news
 
----
-
-## Cara Ubah Format Pesan Telegram
-
-File: `artifacts/api-server/src/lib/telegram.ts`
-- `formatSignal(signal)` — pesan BUY/SELL/WAIT
-- `formatResult(signal, result, exitPrice)` — pesan WIN/LOSS
+**Penting**: `SYSTEM_PROMPT` dan `CHAT_SYSTEM_PROMPT` adalah dua prompt terpisah. Jangan gabungkan — keduanya punya filosofi berbeda:
+- `SYSTEM_PROMPT`: "WAIT adalah keputusan profesional"
+- `CHAT_SYSTEM_PROMPT`: "Selalu beri arah BUY atau SELL kepada user"
 
 ---
 
@@ -120,11 +123,20 @@ Juga update teks `/help` di handler `/start`.
 
 ---
 
+## Cara Ubah Format Pesan Telegram
+
+File: `artifacts/api-server/src/lib/telegram.ts`
+- `formatSignal(signal)` — pesan BUY/SELL/WAIT otomatis
+- `formatChatSignal(signal)` — pesan on-demand /chat (IMMEDIATE_ENTRY dan PENDING_SETUP)
+- `formatResult(signal, result, exitPrice)` — pesan WIN/LOSS
+
+---
+
 ## Cara Buat Sinyal Lebih Akurat
 
 Urutan prioritas yang berdampak paling besar:
 
-1. **Perbaiki system prompt** — instruksi ke AI di `SYSTEM_PROMPT`
+1. **Perbaiki system prompt** — instruksi ke AI di `SYSTEM_PROMPT` (auto) atau `CHAT_SYSTEM_PROMPT` (chat)
 2. **Tambah indikator** — lebih banyak data = AI lebih informasi
 3. **Turunkan confidence threshold** — hati-hati, lebih banyak sinyal = lebih banyak noise
 4. **Ubah timeframe** — sekarang M5/M15/H1/H4. Tambah D1 untuk bias jangka panjang
@@ -132,18 +144,32 @@ Urutan prioritas yang berdampak paling besar:
 
 ---
 
+## Cara Ubah Logika Fallback On-Demand
+
+Ketika AI masih mengembalikan NO_SETUP atau PENDING_SETUP dengan null prices dari `/chat`, ada fallback code di `analyzeMarketOnDemand()` di `ai-agent.ts`:
+
+1. **NO_SETUP fallback** → auto-build PENDING_SETUP dari `key_levels` + `timeframe_bias`
+2. **PENDING_SETUP null prices** → sama seperti NO_SETUP fallback, menggunakan key levels
+3. **PENDING_SETUP decision=WAIT** → auto-koreksi ke BUY/SELL berdasarkan arah TP vs entry
+
+Jika ingin mengubah logika fallback ini, edit section `if (parsed.setup_type === "NO_SETUP")` dan `else if (parsed.setup_type === "PENDING_SETUP")` di fungsi tersebut.
+
+---
+
 ## Struktur File Kunci
 
 ```
 artifacts/api-server/src/lib/
-├── ai-agent.ts        ← LLM, memory system, prompt building
-├── indicators.ts      ← Semua kalkulasi indikator teknikal
-├── deriv-client.ts    ← Koneksi Deriv WebSocket, fetch candle/tick
-├── scheduler.ts       ← State machine ANALYZING/MONITORING, cron
-├── signal-store.ts    ← Penyimpanan sinyal in-memory, win rate
-├── telegram.ts        ← Bot init, format pesan, command handlers
-├── news-calendar.ts   ← ForexFactory calendar, alert levels
-└── logger.ts          ← Pino structured logger
+├── ai-agent.ts          ← LLM, SYSTEM_PROMPT, CHAT_SYSTEM_PROMPT, memory, prompt building
+├── indicators.ts        ← Semua kalkulasi indikator teknikal
+├── deriv-client.ts      ← Koneksi Deriv WebSocket, fetch candle/tick
+├── scheduler.ts         ← State machine ANALYZING/MONITORING, cron, chat suppression
+├── signal-store.ts      ← Penyimpanan sinyal in-memory, win rate
+├── telegram.ts          ← Bot init, formatSignal, formatChatSignal, formatResult, commands
+├── news-calendar.ts     ← ForexFactory calendar, alert levels
+├── persistent-memory.ts ← Load/save memory ke disk (data/memory.json)
+├── long-term-memory.ts  ← AI-managed long-term notes (data/ltm.json)
+└── logger.ts            ← Pino structured logger
 ```
 
 ---
@@ -154,10 +180,12 @@ artifacts/api-server/src/lib/
 |---|---|
 | `market is closed` log setiap menit | Normal — pasar Deriv tutup weekend. Bukan error. |
 | Dashboard tidak update | Pastikan `pnpm --filter @workspace/api-spec run codegen` sudah dijalankan setelah ubah spec |
-| AI tidak kirim sinyal | Cek confidence threshold, cek API key, cek log untuk error |
+| AI tidak kirim sinyal auto | Cek confidence threshold, cek API key, cek log untuk error |
+| `/chat` masih beri WAIT | Cek `CHAT_SYSTEM_PROMPT` aktif di `callAI()` — harus pass `CHAT_SYSTEM_PROMPT` bukan default |
+| `/chat` beri PENDING_SETUP dengan harga null | Fallback code di `analyzeMarketOnDemand()` akan auto-fill — cek key_levels dari AI ada isinya |
 | Bot tidak respon command Telegram | Cek `TELEGRAM_BOT_TOKEN` valid, cek polling error di log |
 | Server tidur di Replit free tier | Setup UptimeRobot ping `/api/healthz` setiap 5 menit |
-| Memori AI reset | Normal setelah restart — memori in-memory. Implementasi persistent JSON jika perlu |
+| Memori AI masih reset | Pastikan `data/` folder ada write permission, cek `persistent-memory.ts` load |
 | `DATABASE_URL` error | `@workspace/db` tidak dipakai aktif — sudah dihapus dari dependensi api-server |
 
 ---
@@ -180,6 +208,15 @@ curl "localhost:80/api/signals?limit=5"
 # Cek harga terkini:
 curl localhost:80/api/market/current
 ```
+
+Test command `/chat` via Telegram:
+```
+/chat analisis posisi sekarang untuk hari ini
+/chat ada setup buy atau sell untuk sesi London?
+/chat saya mau masuk market, ada rekomendasi?
+```
+
+Semua pertanyaan di atas wajib menghasilkan respons dengan entry, TP, SL konkret.
 
 ---
 
