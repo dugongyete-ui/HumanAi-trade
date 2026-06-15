@@ -3,6 +3,8 @@ modules = ["nodejs-24", "python-3.11"]
 [deployment]
 router = "application"
 deploymentTarget = "autoscale"
+run = ["node", "--enable-source-maps", "./artifacts/api-server/dist/index.mjs"]
+build = ["pnpm", "--filter", "@workspace/api-server", "run", "build"]
 
 [deployment.postBuild]
 args = ["pnpm", "store", "prune"]
