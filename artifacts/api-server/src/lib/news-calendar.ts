@@ -4,6 +4,9 @@
  * Endpoint: https://nfs.faireconomy.media/ff_calendar_thisweek.json
  */
 
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { fileURLToPath } from "url";
+import { join, dirname } from "path";
 import { logger } from "./logger.js";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -32,31 +35,80 @@ export interface CalendarContext {
 
 // ─── Cache ─────────────────────────────────────────────────────────────────────
 
-const CACHE_TTL = 60 * 60 * 1000; // 1 jam
+const CACHE_TTL = 4 * 60 * 60 * 1000;   // 4 jam (ForexFactory hanya update mingguan)
+const BACKOFF_429 = 15 * 60 * 1000;      // 15 menit setelah kena rate-limit
 const FF_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.json";
 
-let cache: { data: EconomicEvent[]; ts: number } | null = null;
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const DATA_DIR = join(__dirname, "../../data");
+const CACHE_FILE = join(DATA_DIR, "calendar-cache.json");
+
+let memCache: { data: EconomicEvent[]; ts: number } | null = null;
+let backoffUntil = 0;
+
+function loadDiskCache(): { data: EconomicEvent[]; ts: number } | null {
+  try {
+    if (!existsSync(CACHE_FILE)) return null;
+    const raw = JSON.parse(readFileSync(CACHE_FILE, "utf-8")) as { data: EconomicEvent[]; ts: number };
+    return raw;
+  } catch {
+    return null;
+  }
+}
+
+function saveDiskCache(data: EconomicEvent[]): void {
+  try {
+    if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+    writeFileSync(CACHE_FILE, JSON.stringify({ data, ts: Date.now() }), "utf-8");
+  } catch { /* non-fatal */ }
+}
 
 async function fetchCalendar(): Promise<EconomicEvent[]> {
-  if (cache && Date.now() - cache.ts < CACHE_TTL) {
-    return cache.data;
+  // 1. In-memory cache hit
+  if (memCache && Date.now() - memCache.ts < CACHE_TTL) {
+    return memCache.data;
   }
 
+  // 2. Load from disk if mem cache is cold (e.g. fresh restart)
+  if (!memCache) {
+    const disk = loadDiskCache();
+    if (disk && Date.now() - disk.ts < CACHE_TTL) {
+      memCache = disk;
+      logger.info({ count: disk.data.length }, "Economic calendar loaded from disk cache");
+      return disk.data;
+    }
+  }
+
+  // 3. Respect 429 backoff — don't hammer ForexFactory after rate-limit
+  if (Date.now() < backoffUntil) {
+    const waitSec = Math.round((backoffUntil - Date.now()) / 1000);
+    logger.debug({ waitSec }, "Skipping ForexFactory fetch — 429 backoff active");
+    return memCache?.data ?? loadDiskCache()?.data ?? [];
+  }
+
+  // 4. Fetch from ForexFactory
   try {
     const res = await fetch(FF_URL, {
       headers: { "User-Agent": "Mozilla/5.0 AtlasBot/1.0" },
       signal: AbortSignal.timeout(8000),
     });
 
+    if (res.status === 429) {
+      backoffUntil = Date.now() + BACKOFF_429;
+      logger.warn({ backoffMin: 15 }, "ForexFactory rate-limited (429) — backoff 15 min");
+      return memCache?.data ?? loadDiskCache()?.data ?? [];
+    }
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const raw = (await res.json()) as EconomicEvent[];
-    cache = { data: raw, ts: Date.now() };
+    memCache = { data: raw, ts: Date.now() };
+    saveDiskCache(raw);
     logger.info({ count: raw.length }, "Economic calendar fetched from ForexFactory");
     return raw;
   } catch (err) {
     logger.warn({ err }, "Failed to fetch economic calendar — using cached data or empty");
-    return cache?.data ?? [];
+    return memCache?.data ?? loadDiskCache()?.data ?? [];
   }
 }
 
