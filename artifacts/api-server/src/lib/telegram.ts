@@ -315,7 +315,14 @@ export function formatResult(
 
 // ─── On-Demand Chat Signal Formatter ─────────────────────────────────────────
 
-export function formatChatSignal(s: OnDemandSignal, userQuery: string): string {
+type MonitorConflict = { decision: string; entry_price?: number | null; timestamp: string } | null;
+
+export function formatChatSignal(
+  s: OnDemandSignal,
+  userQuery: string,
+  monitorStarted?: boolean,
+  conflictSignal?: MonitorConflict
+): string {
   const now = new Date().toLocaleString("id-ID", {
     timeZone: "Asia/Jakarta", day: "2-digit", month: "short",
     hour: "2-digit", minute: "2-digit",
@@ -406,19 +413,44 @@ export function formatChatSignal(s: OnDemandSignal, userQuery: string): string {
     body += `\n📍 Support: <b>$${supportLevels ?? "-"}</b>  Resist: <b>$${resistanceLevels ?? "-"}</b>\n`;
   }
 
-  body += `\n⚠️ <i>On-demand — bukan sinyal resmi bot. Selalu kelola risiko sendiri.</i>\n`;
+  // Monitoring status footer
+  if (s.setup_type === "IMMEDIATE_ENTRY") {
+    body += `\n`;
+    if (monitorStarted) {
+      body += `✅ <b>TP/SL Monitoring aktif</b> — sinyal ini dipantau otomatis setiap 10 detik.\n`;
+    } else if (conflictSignal) {
+      const since = new Date(conflictSignal.timestamp).toLocaleString("id-ID", {
+        timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit",
+      });
+      body += `⚠️ <b>Monitor sudah aktif</b> — ada sinyal ${esc(conflictSignal.decision)} sejak ${since} WIB`;
+      if (conflictSignal.entry_price) body += ` (entry $${conflictSignal.entry_price.toFixed(2)})`;
+      body += `.\nSelesaikan sinyal aktif dulu sebelum memulai yang baru.\n`;
+    } else {
+      body += `ℹ️ Sinyal tidak memenuhi threshold sesi saat ini — eksekusi manual jika yakin.\n`;
+    }
+  } else if (s.setup_type === "PENDING_SETUP") {
+    body += `\nℹ️ <i>Pending setup — set order manual di broker Anda sesuai level di atas.</i>\n`;
+  }
+
+  body += `⚠️ <i>On-demand — selalu kelola risiko sendiri.</i>\n`;
   body += `⏰ ${now} WIB`;
   return body;
 }
 
 // ─── Command Registration ─────────────────────────────────────────────────────
 
+type ChatResult = {
+  signal: OnDemandSignal;
+  monitorStarted: boolean;
+  conflictSignal: MonitorConflict;
+};
+
 export function registerCommands(
   onAnalyze: () => Promise<Signal | null>,
   onStatus: () => object,
   onPause: () => void,
   onResume: () => void,
-  onChat: (query: string) => Promise<OnDemandSignal>
+  onChat: (query: string) => Promise<ChatResult>
 ): void {
   if (!bot) return;
 
@@ -448,8 +480,11 @@ export function registerCommands(
     const userQuery = match?.[1]?.trim() || "Cari peluang trading terbaik saat ini";
     await sendMessage(`⏳ <b>Atlas sedang menganalisis...</b>\n📝 <i>"${esc(userQuery)}"</i>`, chatId);
     try {
-      const signal = await onChat(userQuery);
-      await sendMessage(formatChatSignal(signal, userQuery), chatId);
+      const result = await onChat(userQuery);
+      await sendMessage(
+        formatChatSignal(result.signal, userQuery, result.monitorStarted, result.conflictSignal),
+        chatId
+      );
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "Unknown error";
       if (errMsg === "market_closed" || errMsg.toLowerCase().includes("closed")) {

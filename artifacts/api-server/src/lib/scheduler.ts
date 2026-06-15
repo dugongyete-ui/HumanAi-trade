@@ -342,7 +342,13 @@ async function _runAnalysisInternal(): Promise<Signal | null> {
 
 // ─── On-Demand Chat Analysis (/chat) ─────────────────────────────────────────
 
-export async function runChatAnalysis(userQuery: string): Promise<OnDemandSignal> {
+export interface ChatAnalysisResult {
+  signal: OnDemandSignal;
+  monitorStarted: boolean;
+  conflictSignal: { decision: string; entry_price?: number | null; timestamp: string } | null;
+}
+
+export async function runChatAnalysis(userQuery: string): Promise<ChatAnalysisResult> {
   const isOpen = await cachedMarketOpen();
   if (!isOpen) throw new MarketClosedError();
 
@@ -376,7 +382,51 @@ export async function runChatAnalysis(userQuery: string): Promise<OnDemandSignal
   const currentPrice = tick.quote;
   logger.info({ price: currentPrice, query: userQuery }, "Market data fetched for /chat");
 
-  return analyzeMarketOnDemand(userQuery, timeframes, currentPrice, tick, usdProxy);
+  const signal = await analyzeMarketOnDemand(userQuery, timeframes, currentPrice, tick, usdProxy);
+
+  // ── Integrate IMMEDIATE_ENTRY into monitoring state machine ──────────────
+  let monitorStarted = false;
+  let conflictSignal: ChatAnalysisResult["conflictSignal"] = null;
+
+  if (signal.setup_type === "IMMEDIATE_ENTRY" && (signal.decision === "BUY" || signal.decision === "SELL")) {
+    if (state.activeSignal && state.monitorTimer) {
+      // Already monitoring another signal — report conflict, don't start new monitor
+      conflictSignal = {
+        decision: state.activeSignal.decision,
+        entry_price: state.activeSignal.entry_price,
+        timestamp: state.activeSignal.timestamp,
+      };
+      logger.warn(
+        { existing: state.activeSignal.decision, chat: signal.decision },
+        "/chat IMMEDIATE_ENTRY skipped — already monitoring a signal"
+      );
+    } else {
+      // Check session thresholds (same gate as auto mode)
+      const sessionConfig = getSessionConfig();
+      const confluenceOk = (signal.confluence_score ?? 0) >= sessionConfig.confluenceMin;
+      const passesThreshold = signal.confidence >= sessionConfig.confidenceMin && confluenceOk;
+
+      if (passesThreshold) {
+        const stored = storeSignal(signal, currentPrice);
+        state.lastAnalysis = new Date().toISOString();
+        state.mode = "MONITORING";
+        state.activeSignal = stored;
+        startPriceMonitor(stored);
+        monitorStarted = true;
+        logger.info(
+          { decision: signal.decision, id: stored.id, tp: stored.take_profit, sl: stored.stop_loss },
+          "/chat IMMEDIATE_ENTRY — monitoring started"
+        );
+      } else {
+        logger.info(
+          { confidence: signal.confidence, minRequired: sessionConfig.confidenceMin, confluenceOk },
+          "/chat IMMEDIATE_ENTRY — below session threshold, monitoring not started"
+        );
+      }
+    }
+  }
+
+  return { signal, monitorStarted, conflictSignal };
 }
 
 // ─── Bot Lifecycle ────────────────────────────────────────────────────────────

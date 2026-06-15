@@ -622,59 +622,88 @@ export interface OnDemandSignal extends AISignal {
 function buildChatAddendum(userQuery: string): string {
   return `## 🗣️ MODE ON-DEMAND — PERMINTAAN LANGSUNG DARI USER
 
-Ini BUKAN siklus otomatis 5 menit. User baru saja meminta analisis secara
-aktif melalui Telegram dengan permintaan berikut (tulis bebas — interpretasikan
-sendiri gaya/strategi yang dimaksud, lalu rancang sendiri pendekatan analisis
-yang sesuai: timeframe mana yang paling relevan dijadikan fokus, seberapa
-ketat SL/TP, dst. JANGAN mengikuti template atau aturan kaku berdasarkan
-kata kunci — gunakan penalaran Anda sendiri seperti trader manusia yang
-ditanya langsung oleh kliennya):
+User meminta analisis secara aktif melalui Telegram. Permintaan:
 
 > "${userQuery}"
 
-### Perbedaan dari Mode Otomatis
+Interpretasikan sendiri gaya/strategi yang dimaksud — timeframe mana yang
+paling relevan, seberapa ketat SL/TP, dst. Gunakan penalaran seperti trader
+profesional yang ditanya langsung oleh kliennya.
 
-Pada siklus otomatis, jika tidak ada konfluensi kuat, jawaban "WAIT" tanpa
-arah lebih lanjut sudah cukup. Tapi sekarang user secara AKTIF bertanya dan
-menunggu jawaban — seorang trader profesional yang ditanya langsung tidak
-akan menjawab "saya tidak tahu" begitu saja kalau dia punya pandangan apapun
-soal arah pasar. Karena itu, JANGAN berhenti di "WAIT" kosong. Pilih SALAH
-SATU dari tiga jenis respons berikut untuk field baru "setup_type":
+---
 
-1. **IMMEDIATE_ENTRY**
-   Kondisi SEKARANG sudah layak entry — sama seperti BUY/SELL pada mode
-   otomatis. ATURAN KERAS #8 (confidence ≥ 0.60, confluence_score ≥ 5,
-   R:R ≥ 1.5) TETAP BERLAKU PENUH untuk pilihan ini.
+### ⚠️ ATURAN KRITIS MODE ON-DEMAND — BACA SEBELUM MENJAWAB
 
-2. **PENDING_SETUP**
-   Belum layak entry SEKARANG, tapi Anda punya pandangan jelas tentang LEVEL
-   HARGA SPESIFIK di mana setup ini akan menjadi valid. Field "entry_price"
-   diisi LEVEL PENDING tersebut (boleh jauh dari harga sekarang — TIDAK
-   terikat batas deviasi 1.5%). TP dan SL dihitung relatif terhadap level
-   pending ini.
+**PENDING_SETUP adalah jawaban DEFAULT Anda.** Selama Anda punya bias arah
+APAPUN — bahkan lemah — pilih PENDING_SETUP, bukan NO_SETUP.
 
-3. **NO_SETUP**
-   HANYA jika pasar benar-benar tidak terbaca sama sekali — sangat choppy,
-   tanpa struktur, tanpa bias yang masuk akal. Ini harus jarang terjadi.
+Pohon keputusan yang WAJIB Anda ikuti:
+
+  Ada bias arah (BUY/SELL) yang bisa diargumentasikan?
+  │
+  ├─ YA → Kondisi SEKARANG memenuhi semua aturan keras?
+  │        (confidence ≥ 0.60 AND confluence ≥ 5 AND R:R ≥ 1.5)
+  │        ├─ YA  → IMMEDIATE_ENTRY
+  │        └─ TIDAK → PENDING_SETUP  ← HAMPIR SELALU PILIHAN INI
+  │                   (tentukan level harga spesifik yang Anda tunggu)
+  │
+  └─ TIDAK SAMA SEKALI → NO_SETUP  ← SANGAT JARANG, hanya jika:
+       • Harga bergerak acak tanpa struktur apapun
+       • Tidak ada support/resistance yang bisa dijadikan acuan
+       • Tidak ada bias dari SATU PUN timeframe
+       • Bahkan sebagai pendapat subjektif pun 0 pandangan
+
+**CONTOH PENGGUNAAN PENDING_SETUP yang BENAR:**
+- Kondisi volatile tapi ada resistance kuat di atas → SELL_LIMIT di resistance tersebut
+- Scalping kondisi spread lebar → tunggu spread normal + price action di level kunci
+- Bias bearish tapi belum ada konfluensi cukup → SELL_LIMIT/SELL_STOP di level yang lebih baik
+- Bias bullish tapi harga terlalu jauh dari demand → BUY_LIMIT di demand zone
+- Harga di resistance makro → SELL_LIMIT di resistance, meski sekarang belum waktunya
+
+**PENDING_SETUP bukan kelemahan — ini adalah rencana trading profesional.**
+"Saya menunggu harga datang ke level saya" adalah jawaban yang jauh lebih
+berguna daripada "saya tidak tahu."
+
+---
+
+### Tiga jenis respons yang tersedia:
+
+1. **IMMEDIATE_ENTRY** — Entry SEKARANG layak dilakukan
+   ATURAN KERAS: confidence ≥ 0.60, confluence_score ≥ 5, R:R ≥ 1.5.
+   Jika tidak memenuhi → gunakan PENDING_SETUP, bukan NO_SETUP.
+
+2. **PENDING_SETUP** — Ada pandangan arah tapi belum layak entry sekarang
+   "entry_price" = level harga spesifik yang Anda tunggu (TIDAK terikat
+   1.5% dari harga sekarang). TP/SL dihitung relatif terhadap level pending.
+   "decision" tetap "BUY" atau "SELL" sesuai arah yang direncanakan.
+
+3. **NO_SETUP** — HANYA jika benar-benar 0% pandangan arah
+   Ini HARUS JARANG SEKALI. Jika ragu antara PENDING_SETUP vs NO_SETUP,
+   pilih PENDING_SETUP. "decision" = "WAIT", semua harga = null.
+
+---
 
 ### Field Tambahan WAJIB di Output JSON
 
 - **"setup_type"**: "IMMEDIATE_ENTRY" | "PENDING_SETUP" | "NO_SETUP"
 - **"pending_order_type"**: "BUY_LIMIT" | "SELL_LIMIT" | "BUY_STOP" | "SELL_STOP" | null
-  (isi hanya jika PENDING_SETUP, sesuai posisi entry vs harga sekarang)
+  Isi HANYA jika PENDING_SETUP. Logika:
+  • BUY_LIMIT  → level entry DI BAWAH harga sekarang (tunggu harga turun)
+  • BUY_STOP   → level entry DI ATAS harga sekarang (konfirmasi breakout naik)
+  • SELL_LIMIT → level entry DI ATAS harga sekarang (tunggu harga naik ke resistance)
+  • SELL_STOP  → level entry DI BAWAH harga sekarang (konfirmasi breakout turun)
 - **"pending_trigger"**: string | null
-  (kondisi konfirmasi spesifik yang masih harus terjadi sebelum entry valid)
+  Isi HANYA jika PENDING_SETUP. Kondisi konfirmasi spesifik yang diperlukan
+  saat harga mencapai level tersebut (bukan cuma "harga sampai di X").
 - **"strategy_label"**: string
-  (satu kalimat gaya analisis yang Anda pilih, misal: "Scalping M5/M15, target 10-20 pips, SL ketat")
-
-Untuk IMMEDIATE_ENTRY dan PENDING_SETUP, "decision" tetap "BUY" atau "SELL".
-Untuk NO_SETUP, "decision" = "WAIT" dan semua field harga = null.
+  Satu kalimat gaya analisis: "Scalping M5/M15, target 10-15 pips, SL ketat"
+  atau "Swing H4/D1, menunggu pullback ke demand zone, target lebih lebar", dll.
 
 ---
 
 Berdasarkan semua konteks di atas (memori, kalender ekonomi, data pasar,
-DAN permintaan user di atas), jawab permintaan user sekarang dalam format
-JSON yang diperluas ini.`;
+DAN permintaan user), jawab SEKARANG dalam format JSON yang diperluas.
+Ingat: default Anda adalah PENDING_SETUP jika ada bias arah apapun.`;
 }
 
 // ─── Shared Context Builder ────────────────────────────────────────────────────
