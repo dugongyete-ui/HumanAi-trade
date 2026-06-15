@@ -276,6 +276,13 @@ export function registerCommands(
             "⏰ Bot akan otomatis menganalisis ≤5 menit setelah pasar buka.",
           chatId
         );
+      } else if (errMsg === "analysis_in_progress") {
+        await sendMessage(
+          "⏳ <b>Analisis sedang berjalan</b>\n\n" +
+            "Bot sedang memproses siklus analisis otomatis saat ini.\n" +
+            "Hasilnya akan muncul dalam beberapa detik — tidak perlu mengirim ulang.",
+          chatId
+        );
       } else {
         await sendMessage(`❌ Error: ${errMsg}`, chatId);
       }

@@ -56,6 +56,7 @@ function buildMonitorState(signal: Signal): MonitorState {
 
 interface BotState {
   running: boolean;
+  analysisInProgress: boolean;
   paused: boolean;
   mode: "ANALYZING" | "MONITORING";
   lastAnalysis: string | null;
@@ -68,6 +69,7 @@ interface BotState {
 
 const state: BotState = {
   running: false,
+  analysisInProgress: false,
   paused: false,
   mode: "ANALYZING",
   lastAnalysis: null,
@@ -231,6 +233,20 @@ function stopPriceMonitor(): void {
 // ─── Full Analysis (ANALYZING mode) ──────────────────────────────────────────
 
 export async function runAnalysis(): Promise<Signal | null> {
+  if (state.analysisInProgress) {
+    logger.warn("runAnalysis skipped — analysis already in progress");
+    throw new Error("analysis_in_progress");
+  }
+
+  state.analysisInProgress = true;
+  try {
+    return await _runAnalysisInternal();
+  } finally {
+    state.analysisInProgress = false;
+  }
+}
+
+async function _runAnalysisInternal(): Promise<Signal | null> {
   logger.info("Starting XAUUSD market analysis");
 
   const isOpen = await cachedMarketOpen();

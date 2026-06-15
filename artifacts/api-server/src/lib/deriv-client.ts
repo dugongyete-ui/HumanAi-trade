@@ -172,7 +172,17 @@ export async function fetchCandles(granularity: number, count = 100): Promise<Ca
 export async function fetchCurrentTick(): Promise<Tick> {
   const response = await connection.request<{
     tick: { bid: number; ask: number; quote: number; epoch: number };
+    subscription?: { id: string };
   }>({ ticks: SYMBOL }, "tick");
+
+  // Immediately forget the subscription — we only need one tick, not a stream.
+  // Without this, Deriv rejects the next call with "already subscribed to frxXAUUSD".
+  const subId = response.subscription?.id;
+  if (subId) {
+    connection
+      .request<unknown>({ forget: subId }, "forget")
+      .catch(() => { /* ignore — best-effort cleanup */ });
+  }
 
   const t = response.tick;
   return {
