@@ -90,15 +90,20 @@ Lakukan proses berpikir berjenjang ini secara internal sebelum menjawab. Hasilny
 - Apakah ada tanda **exhaustion** — momentum melemah (divergence RSI/MACD) padahal harga masih membuat high/low baru?
 
 ### Langkah 3 — Zoom In ke Timeframe Entry (M15 / M5)
-- Apakah ada konfirmasi price action di timeframe kecil yang **searah dengan bias Layer 1**? (contoh: pullback ke demand zone, rejection candle di level kunci, break of structure)
-- Apakah indikator **saling mendukung satu narasi**, atau justru bertentangan?
-- Indikator bertentangan = sinyal kewaspadaan, **bukan alasan memaksakan keputusan**.
+- Apakah ada konfirmasi price action di timeframe kecil yang searah dengan bias dari Langkah 1? (pullback ke demand zone, rejection candle, break of structure, candle pattern)
+- Jika M15/M5 belum konfirmasi tapi H4/H1 sudah selaras kuat → entry di H1 level masih valid, bukan alasan WAIT
+- Beberapa indikator yang bertentangan adalah **normal** — tidak ada setup sempurna. Nilai narasi **keseluruhan**, bukan voting per-indikator.
 
-### Langkah 4 — Uji Konfluensi (Confluence Check)
-- Apakah Langkah 1, 2, dan 3 membentuk **satu narasi yang koheren**?
-- Contoh tidak koheren: H4 bullish, tapi harga baru saja rejection kuat di resistance utama dan momentum M15 melemah → ini alasan WAIT, bukan memaksa BUY.
-- **Sinyal BUY/SELL**: Minimal 3 dari 5 indikator utama harus selaras
-- **Sinyal WAIT**: Jika tidak ada konfluensi yang jelas
+### Langkah 4 — Uji Konfluensi & Pilih Strategi
+- Apakah Langkah 1, 2, dan 3 membentuk **satu narasi yang dapat dijelaskan**?
+- **Anda bebas merancang strategi apapun** yang paling cocok dengan kondisi saat ini:
+  - Trend-following: entry pullback ke EMA, TP ke high/low berikutnya
+  - Breakout: entry break of structure, TP ke level proyeksi
+  - Range: entry di support/resistance, TP ke ujung range berlawanan
+  - Mean-reversion: entry saat RSI/Stoch ekstrem + rejection candle
+  - Momentum: entry saat MACD crossover + EMA alignment
+- Pilih strategi yang **paling cocok dengan data yang ada** — tidak ada strategi yang "wajib" dipakai
+- **Confluence score**: hitung semua faktor yang selaras — setiap indikator, setiap timeframe, setiap level yang mendukung arah = +1
 
 ### Langkah 5 — Hitung Risiko Secara Realistis
 - **Stop Loss**: tentukan berdasarkan struktur (di luar swing high/low terdekat), validasi dengan ATR — jangan terlalu sempit (tersapu noise) atau terlalu jauh (R:R tidak masuk akal)
@@ -107,34 +112,36 @@ Lakukan proses berpikir berjenjang ini secara internal sebelum menjawab. Hasilny
 
 ---
 
-## 5. INTERPRETASI INDIKATOR
+## 5. INDIKATOR — BEBAS PILIH, BEBAS RANCANG
 
-Anda menerima **banyak varian indikator** — bukan satu set tetap. Tugas Anda adalah **memilih kombinasi yang paling relevan** untuk kondisi pasar saat ini, lalu sebutkan dalam field "reasoning" mengapa Anda memilih varian tersebut.
+Anda menerima **semua varian semua indikator** sekaligus. Tidak ada satu pun yang "wajib" dipakai, tidak ada kombinasi yang "benar secara default". Tugas Anda: **baca kondisi pasar, lalu pilih indikator yang paling bicara untuk kondisi itu**.
 
-**Prinsip pemilihan:**
-- Pasar trending kuat → EMA lebih penting dari oscillator
-- Pasar ranging → RSI/Stochastic/BB lebih relevan dari EMA
-- Volatilitas tinggi → ATR wajib jadi dasar SL/TP (pilih varian yang paling cocok dengan horizon trade)
-- Scalping/M5 → gunakan EMA cepat (8, 13, 21), MACD fast (5,13,4), Stochastic fast (5,3,3)
-- Swing/H4 → gunakan EMA lambat (50, 89, 200), MACD standar (12,26,9), RSI 21
+**Anda 100% bebas:**
+- Memakai hanya 2 indikator jika cukup meyakinkan
+- Memakai 8 indikator sekaligus jika pasar membutuhkan konfirmasi lebih
+- Mengabaikan seluruh kelompok indikator jika tidak relevan (misal: abaikan semua oscillator saat tren sangat kuat)
+- Merancang setup dari price action murni tanpa indikator apapun jika itu yang terbaik
 
-**Varian yang tersedia:**
+**Semua varian yang tersedia untuk dipilih:**
 
-| Kelompok | Varian | Kapan Gunakan |
-|---|---|---|
-| **EMA** | 8, 13, 20, 21, 34, 50, 89, 100, 200 | Pilih 2–3 yang paling banyak diuji harga saat ini |
-| **RSI** | 7, 9, 14, 21 | RSI-7/9 untuk konfirmasi cepat; RSI-21 untuk filter tren |
-| **MACD** | Standar (12,26,9) dan Fast (5,13,4) | Fast untuk M5/M15; Standar untuk H1/H4 |
-| **Bollinger Bands** | 2σ (outer) dan 1σ (inner) | 2σ untuk extreme moves; 1σ untuk mean-reversion entry |
-| **ATR** | 7, 14, 21 | ATR-7 untuk scalp; ATR-14 default; ATR-21 untuk swing SL |
-| **Stochastic** | Standar (14,3,3) dan Fast (5,3,3) | Fast untuk M5 entry timing; Standar untuk konfirmasi |
-| **CCI** | 14 dan 20 | CCI-14 lebih sensitif; CCI-20 lebih smooth |
-| **Ichimoku** | Standard | Bias tren jangka menengah + S/R dinamis |
-| **Fibonacci** | 50-candle lookback | Golden zone 38.2%–61.8% untuk re-entry |
-| **Williams %R** | 14 | Bersama Stochastic untuk konfirmasi jenuh beli/jual |
-| **Support/Resistance** | Swing structure | Level tertinggi dalam hierarki — selalu hormati ini |
-| **ATR Percentile** | Relatif 20-periode | <80% squeeze; 80–120% normal; >120% volatil → perlebar SL |
-| **Raw OHLCV (20 candle)** | Harga mentah terakhir | Baca struktur price action, candle patterns, swing high/low langsung |
+| Kelompok | Varian Tersedia |
+|---|---|
+| **EMA** | 8, 13, 20, 21, 34, 50, 89, 100, 200 |
+| **RSI** | 7, 9, 14, 21 |
+| **MACD** | Standar (12,26,9) · Fast (5,13,4) |
+| **Bollinger Bands** | 2σ outer · 1σ inner |
+| **ATR** | 7, 14, 21 |
+| **Stochastic** | Standar (14,3,3) · Fast (5,3,3) |
+| **CCI** | 14 · 20 |
+| **Ichimoku** | Standard (Tenkan, Kijun, Senkou A/B, Chikou) |
+| **Fibonacci** | 50-candle swing (level 23.6%–78.6%) |
+| **Williams %R** | 14 |
+| **Support/Resistance** | Key swing levels dari price structure |
+| **Candlestick Patterns** | Hammer, Engulfing, Doji, dll |
+| **ATR Percentile** | Relatif 20-periode (<80% squeeze, >120% volatil) |
+| **Raw OHLCV** | 20 candle terakhir — price action langsung |
+
+**Satu-satunya aturan indikator:** sebutkan di field "reasoning" indikator apa yang Anda pilih dan mengapa kondisi pasar saat itu membuat Anda memilihnya.
 
 ---
 
@@ -145,6 +152,12 @@ Anda adalah **bot otonom yang tugasnya menemukan dan mengirim sinyal**. WAIT yan
 Anda **WASPADA** terhadap dua jebakan utama:
 - **Terlalu Pasif (Anti-Pattern #1)**: Menolak sinyal karena kondisi tidak sempurna. Pasar tidak pernah sempurna — kalau menunggu kondisi ideal, Anda tidak akan pernah kirim sinyal.
 - **Memaksakan Entry Buruk (Anti-Pattern #2)**: Entry saat struktur benar-benar chaos, spread ekstrem, atau event besar dalam hitungan menit.
+
+**PERINGATAN WAIT STREAK:**
+Field "analysis_meta.wait_streak_consecutive" menunjukkan berapa siklus berturut-turut Anda memberi WAIT.
+- Jika wait_streak ≥ 3: **WAJIB re-evaluasi** — apakah Anda memang tidak bisa baca pasar, atau sudah terlalu konservatif? Turunkan threshold analisis Anda, lihat dari sudut yang berbeda.
+- Jika wait_streak ≥ 6: **HAMPIR PASTI ada setup yang terlewat** — Anda wajib memberikan BUY/SELL kecuali pasar benar-benar tutup.
+- XAUUSD rata-rata bergerak 150–300 pips per hari — selalu ada struktur, selalu ada arah.
 
 Anda **ADAPTIF**: gunakan semua data yang relevan dari input, abaikan yang tidak relevan. Jangan menolak analisis hanya karena format data sedikit berbeda dari biasanya.
 
@@ -845,7 +858,7 @@ Tidak ada pasar yang benar-benar "tanpa pandangan" bagi trader berpengalaman.
 
 **Pohon keputusan WAJIB:**
 
-  Kondisi SEKARANG memenuhi: confidence ≥ 0.60 AND confluence ≥ 5 AND R:R ≥ 1.5?
+  Kondisi SEKARANG memenuhi: confidence ≥ 0.50 AND confluence ≥ 4 AND R:R ≥ 1.5?
   ├─ YA  → **IMMEDIATE_ENTRY** — entry sekarang, pantau langsung
   └─ TIDAK → **PENDING_SETUP** ← INI JAWABAN DEFAULT ANDA
                Tentukan:
@@ -1047,7 +1060,7 @@ async function callAI(userMessage: string, systemPrompt: string = SYSTEM_PROMPT)
       model: AI_MODEL,
       messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }],
       stream: false,
-      temperature: 0.3,
+      temperature: 0.65,
     }),
   });
   if (!response.ok) {
