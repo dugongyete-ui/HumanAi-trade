@@ -211,6 +211,119 @@ Field **"long_term_memory_ops"** memungkinkan Anda mengelola catatan permanen in
 
 Jika tidak ada perubahan yang diperlukan, set "long_term_memory_ops" ke null.`;
 
+// ─── Chat System Prompt (On-Demand / Mentor Mode) ──────────────────────────────
+// Completely separate from SYSTEM_PROMPT — no hard WAIT rules, always gives direction.
+
+const CHAT_SYSTEM_PROMPT = `# SYSTEM PROMPT — ATLAS: XAUUSD MENTOR MODE
+
+---
+
+## 1. IDENTITAS & PERAN
+
+Anda adalah **"Atlas"** — Senior Gold Trader dengan pengalaman **20+ tahun** yang sedang berperan sebagai **mentor** bagi trader yang bertanya langsung lewat Telegram.
+
+Dalam peran ini, Anda **SELALU memberikan rencana trading yang konkret dan actionable**.
+Seorang mentor tidak pernah menjawab "saya tidak tahu" atau "tidak ada setup" — ia selalu memberikan panduan: "tunggu di level ini, ketika ini terjadi, lakukan ini."
+
+Anda menganalisis pasar secara top-down, tetapi selalu mengakhiri dengan **satu rencana eksekusi konkret** — bukan sekadar narasi ambigu.
+
+---
+
+## 2. PROSES ANALISIS (TOP-DOWN)
+
+Sebelum menjawab, lakukan analisis internal ini:
+
+**Langkah 1 — Baca Big Picture (D1 → H4)**
+- Tren dominan jangka menengah-panjang
+- Level psikologis besar (Fibonacci, S/R historis)
+- Siapa yang mengendalikan: bull atau bear?
+
+**Langkah 2 — Identifikasi Bias Saat Ini (H1)**
+- Konfirmasi arah dari H4 ke H1
+- Fase pasar: trending, ranging, volatile, atau konsolidasi?
+- Arah mana yang lebih masuk akal secara struktur?
+
+**Langkah 3 — Cari Level Entry Terbaik (M15/M5)**
+- Di mana titik entry terbaik untuk arah yang ditentukan di Langkah 1-2?
+- Ini bisa berupa: support/demand zone, resistance/supply zone, breakout level
+- Level ini menjadi "entry_price" Anda — bisa jauh dari harga saat ini
+
+**Langkah 4 — Tentukan TP dan SL**
+- SL: di luar struktur terdekat yang invalidasi analisis (swing high/low, dengan buffer ATR)
+- TP: level S/R berikutnya yang realistis berdasarkan data
+- Pastikan R:R ≥ 1.5 (jika tidak, perlebar TP atau perkecil SL hingga layak)
+
+---
+
+## 3. ATURAN OUTPUT MENTOR
+
+**WAJIB: Selalu berikan arah BUY atau SELL.**
+Tidak ada kondisi pasar yang "benar-benar tanpa pandangan" bagi trader berpengalaman.
+Jika kondisi tidak layak untuk entry SEKARANG, berikan level di mana entry AKAN layak.
+
+**Dua jenis respons yang tersedia:**
+
+1. **IMMEDIATE_ENTRY** — Kondisi SEKARANG sudah layak untuk masuk
+   - confidence ≥ 0.60, confluence ≥ 5, R:R ≥ 1.5
+   - entry_price dekat harga saat ini (dalam ±1.5%)
+   - decision: "BUY" atau "SELL"
+
+2. **PENDING_SETUP** — Kondisi belum ideal sekarang, tapi ada level yang ditunggu
+   - GUNAKAN INI kapanpun kondisi belum memenuhi IMMEDIATE_ENTRY
+   - entry_price = level spesifik yang ditunggu (boleh jauh dari harga saat ini)
+   - pending_order_type: BUY_LIMIT / SELL_LIMIT / BUY_STOP / SELL_STOP
+   - pending_trigger: kondisi konfirmasi saat harga tiba di level tersebut
+   - decision: "BUY" atau "SELL" (bukan WAIT!)
+   - confidence dan confluence boleh rendah — ini bukan entry sekarang
+
+**"WAIT" dengan decision=WAIT dan entry=null: DILARANG** kecuali pasar benar-benar tutup
+atau tidak ada SATUPUN struktur price action yang dapat diidentifikasi di semua timeframe.
+Ini adalah kondisi yang sangat jarang (< 1% kasus).
+
+---
+
+## 4. INTERPRETASI INDIKATOR
+
+| Indikator | Cara Baca |
+|---|---|
+| EMA 20/50/200 | Tren dan dynamic S/R |
+| RSI (14) | Kelelahan momentum — overbought/oversold bukan sinyal langsung |
+| MACD | Konfirmasi momentum dan divergensi |
+| Bollinger Bands | Squeeze = energi terakumulasi |
+| ATR (14) | Dasar penentuan SL/TP — jangan gunakan angka tetap |
+| Ichimoku | Bias tren dan support/resistance dinamis |
+| Fibonacci | Golden zone 38.2-61.8% untuk re-entry |
+| Support/Resistance | Level tertinggi dalam hierarki keputusan |
+
+---
+
+## 5. FORMAT OUTPUT (JSON WAJIB)
+
+Respons HANYA dalam format JSON valid berikut — tidak ada teks di luar JSON:
+
+{"decision":"BUY|SELL|WAIT","setup_type":"IMMEDIATE_ENTRY|PENDING_SETUP|NO_SETUP","confidence":0.0,"entry_price":0.0,"take_profit":0.0,"stop_loss":0.0,"risk_reward_ratio":0.0,"pending_order_type":"BUY_LIMIT|SELL_LIMIT|BUY_STOP|SELL_STOP|null","pending_trigger":"kondisi konfirmasi spesifik saat harga tiba di entry_price — wajib untuk PENDING_SETUP","strategy_label":"satu kalimat: gaya trading, timeframe, dan target pips","market_phase":"TRENDING_UP|TRENDING_DOWN|RANGING|CONSOLIDATION|VOLATILE|DISTRIBUTION|ACCUMULATION","timeframe_bias":{"H4":"BULLISH|BEARISH|NEUTRAL","H1":"BULLISH|BEARISH|NEUTRAL","M15":"BULLISH|BEARISH|NEUTRAL"},"confluence_score":0,"key_levels":{"nearest_resistance":0.0,"nearest_support":0.0},"market_context":"kondisi pasar saat ini — 1-2 kalimat ringkas","reasoning":"analisis top-down lengkap: D1 big picture → H4 bias → H1 konfirmasi → level entry yang dipilih dan alasannya → dasar TP/SL","invalidation":"level atau kondisi spesifik yang membatalkan analisis ini","bull_case":"2-3 argumen teknikal mengapa harga naik","bear_case":"2-3 argumen teknikal mengapa harga turun","what_would_change_my_mind":"kondisi konkret yang membalik keputusan ini","lesson":"insight kualitatif 1-2 kalimat dari kondisi saat ini","long_term_memory_ops":null}
+
+**Aturan Field:**
+- decision: "BUY" atau "SELL" untuk IMMEDIATE_ENTRY dan PENDING_SETUP. "WAIT" hanya jika NO_SETUP
+- setup_type: "IMMEDIATE_ENTRY" jika entry sekarang layak. "PENDING_SETUP" jika entry di level future. "NO_SETUP" sangat jarang
+- entry_price, take_profit, stop_loss: WAJIB diisi angka nyata untuk IMMEDIATE_ENTRY dan PENDING_SETUP — JANGAN null
+- pending_order_type: wajib untuk PENDING_SETUP (BUY_LIMIT jika entry < harga sekarang, SELL_LIMIT jika entry > harga sekarang, BUY_STOP/SELL_STOP untuk breakout)
+- pending_trigger: wajib untuk PENDING_SETUP — bukan "harga sampai di X" tapi konfirmasi spesifik (candle pattern, break of structure, dll)
+- confidence: boleh rendah untuk PENDING_SETUP — ini mengukur keyakinan pada level, bukan pada entry sekarang
+- R:R minimum 1.5 — jika tidak tercapai, sesuaikan TP/SL sampai layak, jangan jadikan alasan NO_SETUP
+
+---
+
+## 6. MEMORI JANGKA PANJANG
+
+Field "long_term_memory_ops" memungkinkan Anda mengelola catatan permanen:
+- ADD: \`{"op":"ADD","content":"teks insight"}\`
+- UPDATE: \`{"op":"UPDATE","id":"<id>","content":"teks baru"}\`
+- DELETE: \`{"op":"DELETE","id":"<id>"}\`
+
+Gunakan untuk pola yang berlaku beberapa hari ke depan. Kapasitas maks 10 catatan.
+Set null jika tidak ada perubahan.`;
+
 // ─── AI Signal Type ────────────────────────────────────────────────────────────
 
 export interface AISignal {
@@ -831,13 +944,13 @@ function buildContextParts(sensoryDataWithMeta: object, calendarSection: string)
   return parts;
 }
 
-async function callAI(userMessage: string): Promise<string> {
+async function callAI(userMessage: string, systemPrompt: string = SYSTEM_PROMPT): Promise<string> {
   const response = await fetch(AI_API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${AI_API_KEY}` },
     body: JSON.stringify({
       model: AI_MODEL,
-      messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: userMessage }],
+      messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }],
       stream: false,
       temperature: 0.3,
     }),
@@ -936,10 +1049,17 @@ export async function analyzeMarketOnDemand(
   const calendarCtx = await getCalendarContext().catch(() => null);
   const calendarSection = calendarCtx ? formatCalendarForAI(calendarCtx) : "";
   const parts = buildContextParts(sensoryDataWithMeta, calendarSection);
-  parts.push(buildChatAddendum(userQuery));
+  parts.push(
+    `## 🗣️ PERMINTAAN MENTOR\n\nUser bertanya: **"${userQuery}"**\n\n` +
+    `Harga saat ini: **$${currentPrice.toFixed(2)}**\n\n` +
+    `Berikan analisis top-down dan rencana trading yang konkret (IMMEDIATE_ENTRY atau PENDING_SETUP). ` +
+    `Ingat: decision HARUS "BUY" atau "SELL" dengan entry_price, take_profit, dan stop_loss yang diisi nyata. ` +
+    `Gunakan PENDING_SETUP jika kondisi belum layak sekarang — entry_price boleh jauh dari harga saat ini.`
+  );
   const userMessage = parts.join("\n\n---\n\n");
 
-  const content = await callAI(userMessage);
+  // Use the dedicated CHAT_SYSTEM_PROMPT — no hard WAIT rules, always gives direction
+  const content = await callAI(userMessage, CHAT_SYSTEM_PROMPT);
   const jsonMatch = content.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
     logger.error({ content }, "AI returned non-JSON response (on-demand)");
@@ -1017,15 +1137,74 @@ export async function analyzeMarketOnDemand(
       logger.info("NO_SETUP kept as WAIT — no usable bias or key levels for fallback");
     }
   } else if (parsed.setup_type === "PENDING_SETUP") {
-    // PENDING_SETUP: entry is intentionally at a future level (support/resistance zone),
-    // so we only validate SL/TP geometry — NOT entry proximity to current price.
-    const validation = validateSignalGeometry(parsed);
-    if (!validation.valid) {
-      logger.warn({ reason: validation.reason }, "On-demand PENDING_SETUP geometry invalid — downgrading to NO_SETUP");
-      parsed.setup_type = "NO_SETUP";
-      parsed.decision = "WAIT";
-      parsed.entry_price = null; parsed.take_profit = null;
-      parsed.stop_loss = null; parsed.risk_reward_ratio = null;
+    // ── Fix: AI sometimes sets PENDING_SETUP but leaves prices null (decision=WAIT bug) ──
+    // When this happens, apply the same key-level fallback to fill in the prices.
+    if (parsed.entry_price == null || parsed.take_profit == null || parsed.stop_loss == null) {
+      const support = parsed.key_levels?.nearest_support;
+      const resistance = parsed.key_levels?.nearest_resistance;
+      const h4 = parsed.timeframe_bias?.H4 ?? "NEUTRAL";
+      const h1 = parsed.timeframe_bias?.H1 ?? "NEUTRAL";
+      const dominantBullish = h4 === "BULLISH" || (h4 === "NEUTRAL" && h1 === "BULLISH");
+      const dominantBearish = h4 === "BEARISH" || (h4 === "NEUTRAL" && h1 === "BEARISH");
+
+      if ((dominantBullish || dominantBearish) && support != null && resistance != null) {
+        const range = resistance - support;
+        if (dominantBullish) {
+          parsed.decision = "BUY";
+          parsed.pending_order_type = "BUY_LIMIT";
+          parsed.entry_price = support;
+          parsed.take_profit = resistance;
+          parsed.stop_loss = support - range * 0.3;
+          parsed.risk_reward_ratio = parseFloat(((resistance - support) / (range * 0.3)).toFixed(2));
+          if (!parsed.pending_trigger || parsed.pending_trigger === "-") {
+            parsed.pending_trigger = `Tunggu harga pullback ke $${support.toFixed(2)}. Konfirmasi bullish price action (engulfing/pin bar) di M15.`;
+          }
+          logger.info({ entry: support, tp: resistance }, "PENDING_SETUP null prices → BUY_LIMIT fallback");
+        } else {
+          parsed.decision = "SELL";
+          parsed.pending_order_type = "SELL_LIMIT";
+          parsed.entry_price = resistance;
+          parsed.take_profit = support;
+          parsed.stop_loss = resistance + range * 0.3;
+          parsed.risk_reward_ratio = parseFloat(((resistance - support) / (range * 0.3)).toFixed(2));
+          if (!parsed.pending_trigger || parsed.pending_trigger === "-") {
+            parsed.pending_trigger = `Tunggu harga rally ke $${resistance.toFixed(2)}. Konfirmasi bearish rejection (shooting star/engulfing) di M15.`;
+          }
+          logger.info({ entry: resistance, tp: support }, "PENDING_SETUP null prices → SELL_LIMIT fallback");
+        }
+      } else {
+        // No usable levels — force NO_SETUP path (will trigger NO_SETUP fallback recursion next cycle)
+        logger.warn("PENDING_SETUP with null prices and no key levels — downgrading to NO_SETUP");
+        parsed.setup_type = "NO_SETUP";
+        parsed.decision = "WAIT";
+        parsed.entry_price = null; parsed.take_profit = null;
+        parsed.stop_loss = null; parsed.risk_reward_ratio = null;
+      }
+    } else {
+      // Prices are filled — just validate geometry (SL/TP sides only, not proximity)
+      const validation = validateSignalGeometry(parsed);
+      if (!validation.valid) {
+        logger.warn({ reason: validation.reason }, "On-demand PENDING_SETUP geometry invalid — downgrading to NO_SETUP");
+        parsed.setup_type = "NO_SETUP";
+        parsed.decision = "WAIT";
+        parsed.entry_price = null; parsed.take_profit = null;
+        parsed.stop_loss = null; parsed.risk_reward_ratio = null;
+      }
+    }
+    // Ensure decision matches direction when prices are set
+    if (parsed.setup_type === "PENDING_SETUP" && parsed.entry_price != null) {
+      if (parsed.decision === "WAIT") {
+        // AI set PENDING_SETUP but forgot to set direction — infer from pending_order_type
+        if (parsed.pending_order_type === "BUY_LIMIT" || parsed.pending_order_type === "BUY_STOP") {
+          parsed.decision = "BUY";
+        } else if (parsed.pending_order_type === "SELL_LIMIT" || parsed.pending_order_type === "SELL_STOP") {
+          parsed.decision = "SELL";
+        } else {
+          // Infer from TP vs entry
+          parsed.decision = (parsed.take_profit ?? 0) > (parsed.entry_price ?? 0) ? "BUY" : "SELL";
+        }
+        logger.info({ inferred: parsed.decision }, "PENDING_SETUP decision=WAIT fixed to BUY/SELL");
+      }
     }
   } else {
     // IMMEDIATE_ENTRY: full geometry + proximity check
