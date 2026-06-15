@@ -16,17 +16,17 @@ LLM (Large Language Model) secara default adalah **stateless** — setiap panggi
 ## Dua Lapisan Memori
 
 ### Short-Term Memory (Riwayat Siklus)
-- Menyimpan 20 siklus analisis terakhir
+- Menyimpan **20 siklus analisis** terakhir
 - Di-inject setiap siklus sebagai konteks
-- Termasuk statistik agregat (win rate, bias H4 dominan, dll)
+- Termasuk statistik agregat (win rate, confidence bands, bias H4 dominan, dll)
 - **Persist ke disk** (`data/memory.json`) — tidak hilang saat restart
 
 ### Long-Term Memory (AI-Managed Notes)
 - AI menulis sendiri catatan permanen yang berlaku beberapa hari ke depan
-- Max 10 catatan aktif
+- Max **10 catatan** aktif
 - AI bisa ADD / UPDATE / DELETE via field `long_term_memory_ops` dalam JSON output
 - Di-inject ke prompt sebagai "Catatan Permanen Atlas"
-- **Persist ke disk** (`data/ltm.json`)
+- **Persist ke disk** (`data/long_term_notes.json`)
 
 **File**: `artifacts/api-server/src/lib/ai-agent.ts`, `persistent-memory.ts`, `long-term-memory.ts`
 
@@ -47,12 +47,15 @@ interface MemoryEntry {
   confluence_score: number;  // 0-10
   market_context: string;    // deskripsi singkat AI
   entry_price, take_profit, stop_loss: number | null;
+  lesson?: string;           // insight AI dari kondisi saat itu
+  invalidation?: string;     // kondisi yang membatalkan analisis
+  what_would_change_my_mind?: string | string[];
   result?: "WIN" | "LOSS" | "ACTIVE" | "EXPIRED";
   exit_price?: number;
   exit_time?: string;
 }
 
-// Statistik agregat seluruh sesi
+// Statistik agregat seluruh sesi (dengan metacognition)
 interface SessionStats {
   wins: number;
   losses: number;
@@ -61,6 +64,13 @@ interface SessionStats {
   waitCount: number;
   lastMarketPhases: string[]; // rolling 5 terakhir
   lastBiasH4: string[];       // rolling 5 terakhir
+  // Metacognition: performa per band confidence
+  confidenceBands: {
+    high: { wins: number; losses: number };    // confidence >= 0.80
+    medium: { wins: number; losses: number };  // 0.60 <= confidence < 0.80
+  };
+  // Metacognition: performa per fase pasar
+  phasePerformance: Record<string, { wins: number; losses: number }>;
 }
 
 // Long-term memory entry (AI-managed)
@@ -89,7 +99,7 @@ Siklus 2:
   recordAnalysis() → memory[0] = siklus 2, memory[1] = siklus 1
 
 Siklus 3:
-  analyzeMarket() → AI memberi BUY (conf 0.75)
+  analyzeMarket() → AI memberi BUY (conf 0.65)
   recordAnalysis() → memory[0] = { decision: "BUY", result: "ACTIVE", ... }
   → kirim sinyal, masuk MONITORING mode
 
@@ -97,14 +107,15 @@ Saat TP hit:
   recordSignalResult("WIN", exitPrice)
   → memory[0].result = "WIN", .exit_price = exitPrice
   → stats.wins++
+  → stats.confidenceBands.medium.wins++ (karena conf 0.65 termasuk medium)
 
 Siklus 4 (kembali ANALYZING):
   buildMemoryContext() menghasilkan teks yang menceritakan:
-  "Siklus lalu BUY, WIN dengan exit $2358, sebelumnya 2x WAIT"
+  "Siklus lalu BUY, WIN dengan exit $3358, sebelumnya 2x WAIT"
   → AI tahu konteks ini sebelum analisis baru
 
 AI dalam analisis baru bisa menulis long-term memory:
-  "long_term_memory_ops": [{"op":"ADD","content":"Support kuat $2335 sudah diuji 3x minggu ini"}]
+  "long_term_memory_ops": [{"op":"ADD","content":"Support kuat $3335 sudah diuji 3x minggu ini"}]
   → disimpan permanen, akan muncul di semua analisis berikutnya
 ```
 
@@ -115,7 +126,7 @@ AI dalam analisis baru bisa menulis long-term memory:
 ```
 ## 📌 CATATAN PERMANEN ATLAS
 
-1. [abc123] Support kuat $2335 sudah diuji 3x minggu ini — 12 Jun 2026
+1. [abc123] Support kuat $3335 sudah diuji 3x minggu ini — 12 Jun 2026
 2. [def456] FOMC meeting 18 Jun — ekspektasi hold, tapi perhatikan dot plot
 
 ---
@@ -128,14 +139,15 @@ KONSISTEN dan EVOLUSIONER, bukan analisis yang mulai dari nol.
 ### 📊 Statistik Sesi Ini:
 - Total analisis: 12 | Sinyal BUY/SELL: 3 | WAIT: 9
 - Hasil sinyal: 2 WIN / 1 LOSS → Win Rate: 67%
+- Confidence bands: High (≥0.80): 1W/0L | Medium (0.60–0.79): 1W/1L
 - Fase pasar 5 siklus terakhir: RANGING → RANGING → TRENDING_UP → TRENDING_UP → VOLATILE
 - Bias H4 dominan: NEUTRAL → NEUTRAL → BULLISH → BULLISH → BEARISH
 
 ### 🕐 Riwayat 10 Analisis Terakhir:
-1. [08:45 WIB] **BUY** | $2345.20 | conf:72% | TRENDING_UP | bias:H4:BULLISH H1:BULLISH M15:BULLISH
-   Entry:$2343.00 TP:$2358.00 SL:$2336.00 → ✅ WIN (exit $2358.20)
-   "Tren naik kuat, confluence tinggi, EMA alignment bullish"
-2. [08:30 WIB] **WAIT** | $2341.80 | conf:44% | CONSOLIDATION
+1. [08:45 WIB] BUY | $3345.20 | conf:72% | TRENDING_UP | bias:H4:BULLISH H1:BULLISH M15:BULLISH
+   Entry:$3343.00 TP:$3358.00 SL:$3336.00 → ✅ WIN (exit $3358.20)
+   "Tren naik kuat, EMA-50/89 stack bullish, RSI-14 masih ruang naik"
+2. [08:30 WIB] WAIT | $3341.80 | conf:44% | CONSOLIDATION
    "Pasar konsolidasi, menunggu breakout dari range..."
 ...
 
@@ -158,7 +170,7 @@ KONSISTEN dan EVOLUSIONER, bukan analisis yang mulai dari nol.
           ↓
 3. ⚠️ KALENDER EKONOMI (event hari ini + alert level)
           ↓
-4. 📡 DATA PASAR REAL-TIME (harga + 4 timeframe + semua indikator + analysis_meta)
+4. 📡 DATA PASAR REAL-TIME (harga + 5 timeframe + SEMUA varian indikator + analysis_meta)
           ↓
 5. Instruksi: "Berikan analisis dan keputusan trading Atlas sekarang"
 ```
@@ -186,13 +198,16 @@ Kapasitas maks 10 catatan. AI diharapkan DELETE catatan lama sebelum ADD yang ba
 ## Limitasi & Catatan
 
 ### Persistent (Tidak Reset saat Restart)
-Sejak implementasi `persistent-memory.ts`, memori disimpan ke file JSON:
+Memory disimpan ke file JSON:
 - `data/memory.json` — short-term memory (riwayat siklus + stats)
-- `data/ltm.json` — long-term memory (catatan permanen AI)
+- `data/long_term_notes.json` — long-term memory (catatan permanen AI)
 
-### Token Limit
-Setiap siklus analisis mengirim ~8.000–15.000 token ke LLM (memori + kalender + data pasar).
-Jika model punya context window terbatas, pertimbangkan kurangi `MAX_MEMORY` dari 20 ke 5–10.
+### Signal Store Tidak Persisted
+`signal-store.ts` menyimpan sinyal **in-memory** saja (max 100). Riwayat sinyal **reset saat server restart**. Win rate dihitung ulang dari nol setiap restart.
+
+### Token per Siklus
+Setiap siklus analisis mengirim ~8.000–15.000 token ke LLM (memori + kalender + semua indikator multi-varian + 5 timeframe).
+Jika model punya context window terbatas, pertimbangkan kurangi `MAX_MEMORY` dari 20 ke 5–10 di `ai-agent.ts`.
 
 ### Thread Safety
 Node.js single-threaded, tidak ada race condition. Semua update ke `memory[]` dan `sessionStats` sinkron.
@@ -219,7 +234,7 @@ entry.atr_m15 = ...; // dari timeframes data
 function buildMemoryContext(): string {
   // ... existing code
   // Tambah section baru:
-  lines.push("\n### Trend ATR 5 siklus:");
+  lines.push("\n### ATR 5 siklus terakhir:");
   // ...
 }
 ```

@@ -1,34 +1,79 @@
-# BOT LOGIC — Atlas State Machine, AI Memory & On-Demand Chat
+# BOT LOGIC — Atlas State Machine, Threshold, Indikator & On-Demand Chat
 
 ## State Machine
 
 Bot beroperasi dalam 2 mode yang berpindah otomatis:
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                   ANALYZING MODE                        │
-│  Cron: */5 * * * * (setiap 5 menit)                    │
-│  Cek market buka → fetch 4 timeframe → hitung indikator │
-│  → inject memori + kalender → kirim ke LLM             │
-│  → BUY/SELL conf≥60% + confluence≥5 + R:R≥1.5?        │
-│         YES ──────────────────────────────────────┐     │
-│         NO / WAIT → tetap ANALYZING               │     │
-└───────────────────────────────────────────────────│─────┘
-                                                    │
-                                                    ▼
-┌─────────────────────────────────────────────────────────┐
-│                   MONITORING MODE                       │
-│  setInterval: setiap 10 detik                          │
-│  Fetch tick harga terkini                              │
-│  BUY: price ≥ TP? → WIN | price ≤ SL? → LOSS          │
-│  SELL: price ≤ TP? → WIN | price ≥ SL? → LOSS         │
-│  Trigger? → kirim WIN/LOSS ke Telegram                 │
-│           → update memori AI                           │
-│           → kembali ke ANALYZING MODE ─────────────────┘
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                       ANALYZING MODE                            │
+│  Cron: */5 * * * * (setiap 5 menit)                            │
+│  Cek market buka → fetch 5 timeframe → hitung semua indikator  │
+│  → inject memori + kalender → kirim ke LLM                     │
+│  → AI pilih sendiri indikator & strategi sesuai kondisi        │
+│  → BUY/SELL lolos session threshold + R:R ≥ 1.5?              │
+│         YES ──────────────────────────────────────────────┐     │
+│         NO / WAIT → tetap ANALYZING                       │     │
+└───────────────────────────────────────────────────────────│─────┘
+                                                            │
+                                                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                       MONITORING MODE                           │
+│  setInterval: setiap 10 detik                                  │
+│  Fetch tick harga terkini                                      │
+│  TP1 (50% dari range) hit? → SL pindah ke breakeven           │
+│  BUY: price ≥ TP2? → WIN | price ≤ trailingSL? → LOSS        │
+│  SELL: price ≤ TP2? → WIN | price ≥ trailingSL? → LOSS       │
+│  Trigger? → kirim WIN/LOSS ke Telegram                        │
+│           → update memori AI                                   │
+│           → kembali ke ANALYZING MODE ────────────────────────┘
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 **File**: `artifacts/api-server/src/lib/scheduler.ts`
+
+---
+
+## Session-Aware Thresholds
+
+Threshold tidak fix — berubah sesuai sesi trading aktif agar lebih adaptif:
+
+| Sesi | Jam UTC | Jam WIB | Confidence Min | Confluence Min |
+|---|---|---|---|---|
+| **Asia** | 22:00–07:59 | 05:00–14:59 | **0.58** | **4** |
+| **London/NY** | 08:00–11:59 / 16:00–21:59 | 15:00–04:59 | **0.55** | **4** |
+| **London+NY Overlap** | 12:00–15:59 | 19:00–22:59 | **0.53** | **4** |
+
+R:R minimum **1.5** berlaku di semua sesi.
+
+**Cara mengubah**: edit `getSessionConfig()` di `scheduler.ts`.
+
+---
+
+## Indikator Teknikal — AI Memilih Sendiri
+
+**File**: `artifacts/api-server/src/lib/indicators.ts`
+
+Semua varian dihitung dan dikirim ke AI. AI **tidak dipaksa** memakai satu set tetap — ia memilih kombinasi yang paling relevan sesuai kondisi pasar saat itu.
+
+| Indikator | Varian Tersedia | Kapan AI Memilih |
+|---|---|---|
+| **EMA** | 8, 13, 20, 21, 34, 50, 89, 100, 200 | Trending → EMA lambat (50/89/200); Scalp → EMA cepat (8/13/21) |
+| **RSI** | 7, 9, 14, 21 | RSI-7/9 konfirmasi cepat; RSI-21 filter tren |
+| **MACD** | Standar (12,26,9) + Fast (5,13,4) | Fast untuk M5/M15; Standar untuk H1/H4 |
+| **Bollinger Bands** | 2σ outer + 1σ inner | 2σ extreme moves; 1σ mean-reversion entry |
+| **ATR** | 7, 14, 21 | ATR-7 scalp; ATR-14 default; ATR-21 swing |
+| **Stochastic** | Standar (14,3,3) + Fast (5,3,3) | Fast M5 entry timing; Standar konfirmasi |
+| **CCI** | 14 + 20 | CCI-14 sensitif; CCI-20 smooth |
+| **Ichimoku** | Standard | Bias tren jangka menengah + S/R dinamis |
+| **Fibonacci** | 50-candle lookback | Golden zone 38.2%–61.8% re-entry |
+| **Williams %R** | 14 | Konfirmasi jenuh beli/jual bersama Stochastic |
+| **Support/Resistance** | Swing structure | Level kritis dari swing high/low |
+| **Candlestick Patterns** | Hammer, Doji, Engulfing, dll | Price action konfirmasi entry |
+| **ATR Percentile** | Relatif 20-periode | <80% squeeze; 80–120% normal; >120% volatil |
+| **Raw OHLCV** | 20 candle terakhir | AI membaca price action langsung |
+
+AI **wajib menyebutkan** dalam field `reasoning` varian mana yang dipilih dan mengapa.
 
 ---
 
@@ -48,29 +93,33 @@ User kirim /chat → analyzeMarketOnDemand() → CHAT_SYSTEM_PROMPT → AI
 
 | | **Auto (cron)** | **On-Demand (/chat)** |
 |---|---|---|
-| System prompt | `SYSTEM_PROMPT` (hard WAIT rules) | `CHAT_SYSTEM_PROMPT` (mentor mode) |
-| Boleh WAIT? | Ya (confidence < 60%) | Hampir tidak pernah |
+| System prompt | `SYSTEM_PROMPT` | `CHAT_SYSTEM_PROMPT` (mentor mode) |
+| Boleh WAIT? | Ya (jika tidak ada struktur) | Hampir tidak pernah |
 | Setup type | IMMEDIATE_ENTRY / NO_SETUP | IMMEDIATE_ENTRY / PENDING_SETUP |
 | Masuk MONITORING? | Ya (jika signal valid) | Tidak |
 | Tujuan | Trading otomatis | Panduan mentor untuk user |
 
-**Suppression window**: Jika user baru saja `/chat` (< 90 detik), scheduler akan skip pengiriman sinyal WAIT biasa ke Telegram untuk menghindari "noise" setelah chat analysis.
+**Suppression window**: Jika user baru saja `/chat` (< 90 detik), scheduler skip pengiriman sinyal WAIT biasa ke Telegram untuk menghindari "noise" setelah chat analysis.
 
 ---
 
-## Threshold & Parameter
+## Parameter & Konstanta
 
 | Parameter | Nilai | Keterangan |
 |---|---|---|
-| Confidence minimum | 60% | Di bawah ini → tidak kirim sinyal, tidak masuk MONITORING |
-| Confluence minimum | 5/10 | Di bawah ini → tidak kirim sinyal (auto mode) |
+| Confidence minimum (Asia) | 0.58 | Session-aware threshold |
+| Confidence minimum (London/NY) | 0.55 | Session-aware threshold |
+| Confidence minimum (Overlap) | 0.53 | Sesi paling aktif — paling longgar |
+| Confluence minimum (semua sesi) | 4/10 | Di bawah ini → tidak kirim sinyal (auto mode) |
 | R:R minimum | 1.5 | Di bawah ini → tidak kirim sinyal (auto mode) |
+| Confidence WAIT (AI internal) | < 0.50 | AI tidak boleh BUY/SELL di bawah ini |
 | Cron schedule | `*/5 * * * *` | Analisis setiap 5 menit |
 | Monitor interval | 10 detik | Cek TP/SL saat MONITORING |
+| TP1 milestone | 50% dari range entry→TP | Saat hit → SL pindah ke breakeven |
 | Chat suppression window | 90 detik | Skip WAIT broadcast setelah /chat |
 | Market cache TTL | 3 menit | Cache hasil `checkMarketOpen()` |
-| Calendar cache TTL | 1 jam | Cache ForexFactory feed |
-| Memory max entries | 20 | Simpan 20 siklus terakhir (persisted ke disk) |
+| Calendar cache TTL | 4 jam | Cache ForexFactory feed (disk + memory) |
+| Memory max entries | 20 | Simpan 20 siklus terakhir (persist ke disk) |
 
 ---
 
@@ -80,20 +129,21 @@ User kirim /chat → analyzeMarketOnDemand() → CHAT_SYSTEM_PROMPT → AI
 
 Setiap siklus analisis, AI **bukan** mulai dari nol. AI menerima konteks:
 
-### 1. Statistik Sesi
+### 1. Statistik Sesi (dengan Metacognition)
 ```
 Total analisis: 47 | BUY/SELL: 8 | WAIT: 39
 Hasil: 5 WIN / 2 LOSS → Win Rate: 71%
+Confidence bands: High (≥0.80): 3W/0L | Medium (0.60–0.79): 2W/2L
 Fase 5 siklus: RANGING → RANGING → TRENDING_UP → TRENDING_UP → TRENDING_UP
-Bias H4 dominan: NEUTRAL → NEUTRAL → BULLISH → BULLISH → BULLISH
+Bias H4 dominan: NEUTRAL (3 siklus berturut-turut)
 ```
 
 ### 2. Riwayat 10 Siklus Terakhir
 ```
-1. [08:45 WIB] BUY | $2345.20 | conf:72% | TRENDING_UP | bias H4:BULLISH
-   Entry:$2343.00 TP:$2358.00 SL:$2336.00
-   → ✅ WIN (exit $2358.20)
-2. [08:44 WIB] WAIT | $2341.80 | conf:44% | CONSOLIDATION
+1. [08:45 WIB] BUY | $3345.20 | conf:72% | TRENDING_UP | bias H4:BULLISH
+   Entry:$3343.00 TP:$3358.00 SL:$3336.00
+   → ✅ WIN (exit $3358.20)
+2. [08:30 WIB] WAIT | $3341.80 | conf:44% | CONSOLIDATION
    "Pasar konsolidasi, menunggu breakout..."
 ```
 
@@ -110,45 +160,8 @@ AI bisa menyimpan catatan permanen antar sesi via field `long_term_memory_ops` d
 - `UPDATE` — perbarui catatan yang ada (by ID)
 - `DELETE` — hapus catatan yang sudah tidak relevan
 
-Catatan ini di-inject kembali ke setiap prompt sebagai "Catatan Permanen Atlas".
-
 **File**: `artifacts/api-server/src/lib/long-term-memory.ts`
-
-### Siklus Hidup Memori
-
-```typescript
-// Setelah setiap analisis:
-recordAnalysis(signal, currentPrice, wibTime)
-
-// Setelah TP/SL hit:
-recordSignalResult("WIN" | "LOSS", exitPrice)
-```
-
-**Catatan**: Short-term memory (riwayat siklus) dan long-term memory keduanya di-persist ke disk (`data/memory.json`, `data/ltm.json`). Tidak hilang saat server restart.
-
----
-
-## Data yang Diterima AI Per Siklus
-
-```
-[Long-term memory Atlas — catatan permanen AI]
-         +
-[Memori 10 siklus + statistik + refleksi diri]
-         +
-[Kalender ekonomi: event hari ini, 4 jam ke depan, alert level]
-         +
-[Data pasar real-time:]
-  - Harga XAUUSD terkini
-  - Waktu WIB + sesi trading aktif
-  - M5 candles (100 candle)
-  - M15 candles (100 candle)
-  - H1 candles (100 candle)
-  - H4 candles (100 candle)
-  - Per timeframe: EMA20/50/200, RSI, MACD, BB, ATR, Stochastic,
-    Ichimoku, Fibonacci, Williams %R, CCI, S/R levels,
-    candlestick patterns
-  - analysis_meta: wait_streak, H4 bias persistence
-```
+**Disk**: `data/long_term_notes.json`
 
 ---
 
@@ -163,33 +176,14 @@ Source: ForexFactory public JSON — `https://nfs.faireconomy.media/ff_calendar_
 | Alert | Kondisi | Instruksi ke AI |
 |---|---|---|
 | ✅ CLEAR | Tidak ada event High dalam 4 jam | Analisis normal |
-| ⚡ CAUTION | Ada event High dalam 4 jam | Naikkan confluence ke 7/10 |
+| ⚡ CAUTION | Ada event High dalam 4 jam | Naikkan kewaspadaan confluence |
 | 🚨 HIGH_ALERT | Event High dalam <1 jam | Sangat disarankan WAIT; SL 1.5–2x ATR |
 
 Event yang dianggap relevan untuk XAUUSD:
 - Semua event `impact: "High"` dari USD
 - Event High dari EUR, GBP, JPY, CHF (sentimen risk global)
 
----
-
-## Indikator Teknikal
-
-**File**: `artifacts/api-server/src/lib/indicators.ts`
-
-| Indikator | Fungsi |
-|---|---|
-| EMA 20/50/200 | Tren & dynamic S/R |
-| RSI (14) | Momentum & overbought/oversold |
-| MACD (12,26,9) | Perubahan momentum & divergence |
-| Bollinger Bands (20,2) | Volatilitas & squeeze detection |
-| ATR (14) | Ukuran SL/TP berdasarkan volatilitas aktual |
-| Stochastic (14,3,3) | Konfirmasi jenuh beli/jual di TF rendah |
-| Ichimoku Cloud | Bias tren jangka menengah + momentum |
-| Fibonacci Retracement | Golden zone 38.2%–61.8% untuk re-entry |
-| Williams %R (14) | Konfirmasi reversal bersama Stochastic |
-| CCI (20) | Divergence & kondisi ekstrem |
-| Support/Resistance | Level kritis dari swing high/low |
-| Candlestick Patterns | Hammer, Doji, Engulfing, dll |
+Cache: 4 jam (memory + disk). Rate-limit 429 backoff 15 menit.
 
 ---
 
@@ -219,6 +213,27 @@ Tidak ada data sama sekali? → WAIT (sangat jarang, < 1% kasus)
 
 ---
 
+## TP1/TP2 + Trailing SL (MONITORING Mode)
+
+```
+Sinyal BUY: entry $3343, TP $3358, SL $3336
+  TP1 = entry + (TP - entry) × 50% = $3350.5
+  
+Harga naik ke $3350.5 (TP1 hit):
+  → Notifikasi "TP1 hit!" ke Telegram
+  → SL pindah ke breakeven (= entry $3343)
+  → Tunggu TP2 ($3358)
+  
+Harga naik ke $3358 (TP2 hit):
+  → WIN! Notifikasi ke Telegram
+  → Kembali ANALYZING
+  
+Atau harga turun ke $3343 (trailing SL = breakeven):
+  → Exit breakeven (tidak LOSS, tidak WIN — LOSS dihitung jika di bawah entry awal)
+```
+
+---
+
 ## Deriv WebSocket Client
 
 **File**: `artifacts/api-server/src/lib/deriv-client.ts`
@@ -229,46 +244,5 @@ Tidak ada data sama sekali? → WAIT (sangat jarang, < 1% kasus)
   - Tutup: Jumat ~20:55 UTC (~03:55 WIB Sabtu)
 - Market closed → `MarketClosedError` → bot skip siklus, retry menit berikutnya
 - Pre-check via `active_symbols` API sebelum fetch candle (hemat request)
-
----
-
-## Signal Store
-
-**File**: `artifacts/api-server/src/lib/signal-store.ts`
-
-```typescript
-interface Signal extends AISignal {
-  id: string;
-  timestamp: string;
-  current_price: number;
-  status: "active" | "tp_hit" | "sl_hit" | "wait";
-  exit_price?: number;
-  exit_time?: string;
-  result?: "WIN" | "LOSS";
-}
-```
-
-- In-memory, max 100 sinyal
-- Reset saat server restart
-- `getWinRate()` → `{ wins, losses, rate }`
-
----
-
-## Telegram Bot
-
-**File**: `artifacts/api-server/src/lib/telegram.ts`
-
-Mode: **Polling** (cocok untuk server yang always-on)
-
-Commands:
-- `/start` / `/help` — daftar perintah
-- `/analyze` — trigger analisis manual sekarang
-- `/status` — tampilkan mode, sinyal aktif, win rate, next analysis
-- `/pause` — jeda analisis otomatis
-- `/resume` — lanjutkan analisis otomatis
-- `/chat <pertanyaan>` — minta panduan trading langsung dari Atlas (mentor mode, selalu beri BUY/SELL)
-
-Format pesan Telegram:
-- `formatSignal(signal)` — pesan BUY/SELL/WAIT otomatis
-- `formatChatSignal(signal)` — pesan on-demand `/chat` (termasuk pending_order_type, pending_trigger)
-- `formatResult(signal, result, exitPrice)` — pesan WIN/LOSS setelah TP/SL
+- USD Proxy: EURUSD H1 sebagai proxy kekuatan dolar (EMA8 sebagai trend filter)
+- Multiplexed single WebSocket connection — tidak buka koneksi baru per request
