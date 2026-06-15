@@ -201,9 +201,9 @@ export interface AISignal {
   market_context: string;
   reasoning: string;
   invalidation: string;
-  bull_case: string;
-  bear_case: string;
-  what_would_change_my_mind: string;
+  bull_case: string | string[];
+  bear_case: string | string[];
+  what_would_change_my_mind: string | string[];
   lesson: string;
 }
 

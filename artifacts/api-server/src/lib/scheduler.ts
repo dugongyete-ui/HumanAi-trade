@@ -6,7 +6,7 @@ import {
   storeSignal, updateSignalResult, getSignals, getLastSignal,
   getTotalCount, getWinRate, type Signal,
 } from "./signal-store.js";
-import { sendMessage, formatSignal, formatResult, formatPartialTP } from "./telegram.js";
+import { sendMessage, formatSignal, formatWaitBrief, formatResult, formatPartialTP } from "./telegram.js";
 import { logger } from "./logger.js";
 
 const CRON_SCHEDULE = "*/5 * * * *";
@@ -312,16 +312,22 @@ async function _runAnalysisInternal(): Promise<Signal | null> {
       "Switched to MONITORING mode"
     );
   } else if (aiSignal.decision === "WAIT") {
-    logger.info("AI decision: WAIT — continuing analysis next cycle");
+    await sendMessage(formatWaitBrief(signal));
+    logger.info(
+      { confidence: aiSignal.confidence, confluence: aiSignal.confluence_score },
+      "AI decision: WAIT — brief analysis sent to Telegram"
+    );
   } else {
+    await sendMessage(formatWaitBrief(signal));
     logger.info(
       {
+        decision: aiSignal.decision,
         confidence: aiSignal.confidence,
         minRequired: sessionConfig.confidenceMin,
         confluenceOk,
         session: sessionConfig.label,
       },
-      "Confidence/confluence below session threshold — skipping signal"
+      "Below session threshold — brief analysis sent to Telegram"
     );
   }
 

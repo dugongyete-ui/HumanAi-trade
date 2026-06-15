@@ -148,6 +148,58 @@ export function formatSignal(signal: Signal): string {
   );
 }
 
+// ─── Format: Scheduled WAIT Brief ────────────────────────────────────────────
+
+export function formatWaitBrief(signal: Signal): string {
+  const confidencePct = Math.round(signal.confidence * 100);
+  const filled = Math.round(confidencePct / 10);
+  const confidenceBar = "█".repeat(filled) + "░".repeat(10 - filled);
+  const confluenceScore = signal.confluence_score ?? 0;
+
+  const ts = new Date(signal.timestamp).toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    hour: "2-digit", minute: "2-digit",
+  });
+
+  const phaseLabel = PHASE_LABEL[signal.market_phase] ?? signal.market_phase ?? "-";
+  const biasH4 = BIAS_EMOJI[signal.timeframe_bias?.H4 ?? "NEUTRAL"] ?? "⚪";
+  const biasH1 = BIAS_EMOJI[signal.timeframe_bias?.H1 ?? "NEUTRAL"] ?? "⚪";
+  const biasM15 = BIAS_EMOJI[signal.timeframe_bias?.M15 ?? "NEUTRAL"] ?? "⚪";
+
+  const decisionEmoji = signal.decision === "BUY" ? "🟢" : signal.decision === "SELL" ? "🔴" : "⏸️";
+  const decisionLabel = signal.decision === "WAIT"
+    ? "WAIT — Belum ada setup valid"
+    : `${signal.decision} (confidence belum cukup: ${confidencePct}%)`;
+
+  const renderList = (val: string | string[] | undefined | null): string => {
+    if (!val || val === "-") return "  —";
+    if (Array.isArray(val)) {
+      return val.slice(0, 2).map((v) => `  • ${v}`).join("\n");
+    }
+    return `  • ${val}`;
+  };
+
+  const lesson = signal.lesson && signal.lesson !== "-" ? signal.lesson : null;
+  const wtcmm = signal.what_would_change_my_mind;
+  const wtcmmText = wtcmm && wtcmm !== "-"
+    ? (Array.isArray(wtcmm) ? wtcmm[0] : String(wtcmm))
+    : null;
+
+  return (
+    `${decisionEmoji} <b>ATLAS | XAUUSD — ${decisionLabel}</b>\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `💹 Harga: <b>$${signal.current_price.toFixed(2)}</b>  |  🗺️ <b>${phaseLabel}</b>\n` +
+    `📊 ${confidencePct}% [${confidenceBar}]  🔗 ${confluenceScore}/10\n` +
+    `🧭 H4 ${biasH4}  H1 ${biasH1}  M15 ${biasM15}\n\n` +
+    `📋 <i>${signal.market_context}</i>\n\n` +
+    `🟢 <b>Bull Case:</b>\n${renderList(signal.bull_case)}\n\n` +
+    `🔴 <b>Bear Case:</b>\n${renderList(signal.bear_case)}\n` +
+    (wtcmmText ? `\n🔄 <b>Pemicu arah:</b> <i>${wtcmmText}</i>\n` : "") +
+    (lesson ? `\n💡 <b>Lesson:</b> <i>${lesson}</i>\n` : "") +
+    `\n⏰ ${ts} WIB  •  Analisis berikutnya: ~5 mnt`
+  );
+}
+
 // ─── Format: TP1 Partial Hit ──────────────────────────────────────────────────
 
 export function formatPartialTP(
