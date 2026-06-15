@@ -38,6 +38,16 @@ export async function sendMessage(text: string, chatId?: string): Promise<void> 
   }
 }
 
+// ─── HTML Escape (prevent AI text from breaking Telegram HTML parser) ─────────
+
+function esc(text: string | null | undefined): string {
+  if (!text) return "";
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 // ─── Labels ───────────────────────────────────────────────────────────────────
 
 const PHASE_LABEL: Record<string, string> = {
@@ -61,9 +71,9 @@ const BIAS_EMOJI: Record<string, string> = {
 function renderBullBear(val: string | string[] | undefined | null, maxItems = 3): string {
   if (!val || val === "-") return "—";
   if (Array.isArray(val)) {
-    return val.slice(0, maxItems).map((v, i) => `${i + 1}. ${v}`).join("\n   ");
+    return val.slice(0, maxItems).map((v, i) => `${i + 1}. ${esc(v)}`).join("\n   ");
   }
-  return String(val);
+  return esc(String(val));
 }
 
 export function formatSignal(signal: Signal): string {
@@ -95,11 +105,11 @@ export function formatSignal(signal: Signal): string {
       `📊 Confidence: <b>${confidencePct}%</b> [${confidenceBar}]\n` +
       `🔗 Confluence: <b>${confluenceScore}/10</b> [${confluenceBar}]\n\n` +
       `🧭 Bias Timeframe:\n  H4 ${biasH4}  H1 ${biasH1}  M15 ${biasM15}\n\n` +
-      `📋 <i>${signal.market_context}</i>\n\n` +
-      `💬 <b>Analisis Atlas:</b>\n${signal.reasoning}\n\n` +
+      `📋 <i>${esc(signal.market_context)}</i>\n\n` +
+      `💬 <b>Analisis Atlas:</b>\n${esc(signal.reasoning)}\n\n` +
       `⚖️ <b>Bull:</b> <i>${renderBullBear(signal.bull_case, 2)}</i>\n` +
       `⚖️ <b>Bear:</b> <i>${renderBullBear(signal.bear_case, 2)}</i>\n` +
-      (signal.lesson && signal.lesson !== "-" ? `💡 <b>Lesson:</b> <i>${signal.lesson}</i>\n\n` : "\n") +
+      (signal.lesson && signal.lesson !== "-" ? `💡 <b>Lesson:</b> <i>${esc(signal.lesson)}</i>\n\n` : "\n") +
       `⏰ ${ts} WIB`
     );
   }
@@ -124,7 +134,7 @@ export function formatSignal(signal: Signal): string {
       : "";
 
   const invalidation = signal.invalidation
-    ? `\n\n⚠️ <b>Invalidasi:</b> <i>${signal.invalidation}</i>`
+    ? `\n\n⚠️ <b>Invalidasi:</b> <i>${esc(signal.invalidation)}</i>`
     : "";
 
   const bullBrief = renderBullBear(signal.bull_case, 1);
@@ -133,7 +143,7 @@ export function formatSignal(signal: Signal): string {
     ? `\n\n⚖️ Bull: <i>${bullBrief}</i>\n⚖️ Bear: <i>${bearBrief}</i>`
     : "";
   const lessonLine = signal.lesson && signal.lesson !== "-"
-    ? `\n💡 <i>${signal.lesson}</i>`
+    ? `\n💡 <i>${esc(signal.lesson)}</i>`
     : "";
 
   // Show TP1/TP2 info for non-WAIT signals
@@ -161,8 +171,8 @@ export function formatSignal(signal: Signal): string {
     rrText +
     levelsText +
     `\n\n` +
-    `📋 <i>${signal.market_context}</i>\n\n` +
-    `💬 <b>Analisis Atlas:</b>\n${signal.reasoning}` +
+    `📋 <i>${esc(signal.market_context)}</i>\n\n` +
+    `💬 <b>Analisis Atlas:</b>\n${esc(signal.reasoning)}` +
     invalidation +
     bullBearLine +
     lessonLine +
@@ -196,9 +206,9 @@ export function formatWaitBrief(signal: Signal): string {
   const renderList = (val: string | string[] | undefined | null): string => {
     if (!val || val === "-") return "  —";
     if (Array.isArray(val)) {
-      return val.slice(0, 2).map((v) => `  • ${v}`).join("\n");
+      return val.slice(0, 2).map((v) => `  • ${esc(v)}`).join("\n");
     }
-    return `  • ${val}`;
+    return `  • ${esc(String(val))}`;
   };
 
   const lesson = signal.lesson && signal.lesson !== "-" ? signal.lesson : null;
@@ -213,11 +223,11 @@ export function formatWaitBrief(signal: Signal): string {
     `💹 Harga: <b>$${signal.current_price.toFixed(2)}</b>  |  🗺️ <b>${phaseLabel}</b>\n` +
     `📊 ${confidencePct}% [${confidenceBar}]  🔗 ${confluenceScore}/10\n` +
     `🧭 H4 ${biasH4}  H1 ${biasH1}  M15 ${biasM15}\n\n` +
-    `📋 <i>${signal.market_context}</i>\n\n` +
+    `📋 <i>${esc(signal.market_context)}</i>\n\n` +
     `🟢 <b>Bull Case:</b>\n${renderList(signal.bull_case)}\n\n` +
     `🔴 <b>Bear Case:</b>\n${renderList(signal.bear_case)}\n` +
-    (wtcmmText ? `\n🔄 <b>Pemicu arah:</b> <i>${wtcmmText}</i>\n` : "") +
-    (lesson ? `\n💡 <b>Lesson:</b> <i>${lesson}</i>\n` : "") +
+    (wtcmmText ? `\n🔄 <b>Pemicu arah:</b> <i>${esc(wtcmmText)}</i>\n` : "") +
+    (lesson ? `\n💡 <b>Lesson:</b> <i>${esc(lesson)}</i>\n` : "") +
     `\n⏰ ${ts} WIB  •  Analisis berikutnya: ~5 mnt`
   );
 }
