@@ -1,6 +1,24 @@
 {
   "memory": [
     {
+      "timestamp": "2026-06-15T00:40:09.099Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 07.39.49",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4298.59,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "NEUTRAL"
+      },
+      "confluence_score": 3,
+      "market_context": "Harga XAUUSD ($4298.59) berada dalam fase VOLATILE di sesi Asia dengan kondisi overbought ekstrem pada timeframe intraday (M5 RSI 82, H1 CCI 372) namun tertahan tepat di bawah resistensi dinamis EMA 50 H4 ($4303.30). Struktur H4 masih sideways dengan Ichimoku Cloud bearish, menandakan kenaikan saat ini berpotensi sebagai false breakout atau koreksi teknikal dalam tren besar yang belum konfirmasi bullish.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null
+    },
+    {
       "timestamp": "2026-06-15T00:22:12.115Z",
       "timeWib": "Senin, 15 Juni 2026 pukul 07.21.50",
       "decision": "WAIT",
@@ -131,8 +149,8 @@
     "wins": 0,
     "losses": 0,
     "totalSignals": 0,
-    "totalAnalyses": 7,
-    "waitCount": 7,
+    "totalAnalyses": 8,
+    "waitCount": 8,
     "lastMarketPhases": [
       "VOLATILE",
       "VOLATILE",
@@ -148,5 +166,5 @@
       "NEUTRAL"
     ]
   },
-  "savedAt": "2026-06-15T00:22:14.115Z"
+  "savedAt": "2026-06-15T00:40:11.100Z"
 }
