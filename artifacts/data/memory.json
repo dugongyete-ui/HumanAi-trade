@@ -1,6 +1,46 @@
 {
   "memory": [
     {
+      "timestamp": "2026-06-15T01:15:20.640Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 08.14.51",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4296.96,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE di sesi Asia dengan harga ($4296.96) terkoreksi dari high $4308.16 dan kini menguji support intraday $4286.29. Meskipun USD melemah (EURUSD naik), struktur H4 masih sideways dengan Ichimoku Cloud bearish dan EMA 50 H4 ($4303.25) bertindak sebagai resistensi dinamis yang belum tertembus secara valid. Indikator overbought ekstrem di H1 (CCI 274, RSI 75) dan M15 (Stoch 88, Williams %R -10) mengonfirmasi kelelahan momentum jangka pendek setelah reli tajam.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Konsistensi 20 WAIT berturut-turut di sesi Asia dengan kondisi overbought ekstrem dan resistensi H4 belum tertembus adalah bukti bahwa disiplin terhadap konfluensi minimal lebih bernilai daripada aktivitas trading semu — pasar yang bergerak vertikal tanpa koreksi sehat di likuiditas tipis adalah jebakan klasik bagi trader yang merasa 'harus masuk karena USD melemah', padahal struktur teknikal belum mengizinkan.",
+      "invalidation": "Breakout valid H1 close di atas $4308.16 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4216) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH dengan konfluensi memadai.",
+      "what_would_change_my_mind": "Close H4 di atas $4308.16 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat, ATAU pembentukan higher low valid di M15 di atas $4286 dengan konfirmasi MACD cross bullish — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY dengan konfidensi ≥0.60."
+    },
+    {
+      "timestamp": "2026-06-15T01:10:33.540Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 08.10.03",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4290.76,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE di sesi Asia dengan harga ($4290.76) terkoreksi dari high $4308.16 dan kini menguji support intraday $4286.29. Meskipun USD melemah (EURUSD naik), struktur H4 masih sideways dengan Ichimoku Cloud bearish dan EMA 50 H4 ($4302.95) bertindak sebagai resistensi dinamis yang belum tertembus secara valid. Indikator overbought ekstrem di H1 (CCI 268, RSI 73) dan M15 (Stoch 86, Williams %R -17) mengonfirmasi kelelahan momentum jangka pendek setelah reli tajam.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Konsistensi 18 WAIT berturut-turut di sesi Asia dengan kondisi overbought ekstrem dan resistensi H4 belum tertembus adalah bukti bahwa disiplin terhadap konfluensi minimal lebih bernilai daripada aktivitas trading semu — pasar yang bergerak vertikal tanpa koreksi sehat di likuiditas tipis adalah jebakan klasik bagi trader yang merasa 'harus masuk karena USD melemah', padahal struktur teknikal belum mengizinkan."
+    },
+    {
       "timestamp": "2026-06-15T01:05:29.732Z",
       "timeWib": "Senin, 15 Juni 2026 pukul 08.05.01",
       "decision": "WAIT",
@@ -338,8 +378,8 @@
     "wins": 0,
     "losses": 0,
     "totalSignals": 0,
-    "totalAnalyses": 18,
-    "waitCount": 18,
+    "totalAnalyses": 20,
+    "waitCount": 20,
     "lastMarketPhases": [
       "VOLATILE",
       "VOLATILE",
@@ -355,5 +395,5 @@
       "NEUTRAL"
     ]
   },
-  "savedAt": "2026-06-15T01:05:31.732Z"
+  "savedAt": "2026-06-15T01:15:22.640Z"
 }

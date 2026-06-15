@@ -262,9 +262,15 @@ async function _runAnalysisInternal(): Promise<Signal | null> {
     fetchCandles(GRANULARITY.H4, 100),
     fetchCandles(GRANULARITY.D1, 50),
     fetchCurrentTick(),
-    fetchUSDProxy().catch((err): USDProxy | null => {
-      logger.warn({ err }, "USD proxy fetch failed — skipping");
-      return null;
+    fetchUSDProxy().catch((err): USDProxy => {
+      logger.warn({ err }, "USD proxy fetch failed — using neutral fallback");
+      return {
+        symbol: "USD (data tidak tersedia)",
+        trend: "USD_NEUTRAL",
+        interpretation: "Data USD tidak tersedia saat ini — abaikan faktor USD dalam analisis ini",
+        last_close: 0,
+        change_pct_10h: 0,
+      };
     }),
   ]);
 

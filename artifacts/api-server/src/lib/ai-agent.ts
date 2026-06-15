@@ -223,6 +223,8 @@ interface MemoryEntry {
   take_profit: number | null;
   stop_loss: number | null;
   lesson?: string;
+  invalidation?: string;
+  what_would_change_my_mind?: string | string[];
   result?: "WIN" | "LOSS" | "ACTIVE" | "EXPIRED";
   exit_price?: number;
   exit_time?: string;
@@ -302,6 +304,10 @@ export function recordAnalysis(signal: AISignal, price: number, timeWib: string)
   };
 
   if (signal.lesson && signal.lesson !== "-") entry.lesson = signal.lesson;
+  if (signal.invalidation && signal.invalidation !== "-") entry.invalidation = signal.invalidation;
+  if (signal.what_would_change_my_mind && signal.what_would_change_my_mind !== "-") {
+    entry.what_would_change_my_mind = signal.what_would_change_my_mind;
+  }
 
   memory.unshift(entry);
   if (memory.length > MAX_MEMORY) memory.splice(MAX_MEMORY);
@@ -378,6 +384,15 @@ function buildMemoryContext(): string {
     if (m.lesson) {
       lines.push(`   📝 Lesson: "${m.lesson}"`);
     }
+    if (m.invalidation) {
+      lines.push(`   ⚠️ Invalidasi dulu: "${m.invalidation}"`);
+    }
+    if (m.what_would_change_my_mind) {
+      const w = Array.isArray(m.what_would_change_my_mind)
+        ? m.what_would_change_my_mind[0]
+        : m.what_would_change_my_mind;
+      lines.push(`   🔄 Pemicu arah dulu: "${w}"`);
+    }
   });
 
   // --- Reflection prompts
@@ -388,6 +403,7 @@ function buildMemoryContext(): string {
   lines.push("3. **Pembelajaran LOSS**: Jika sinyal terakhir LOSS — identifikasi apa yang keliru. Apakah kondisi saat ini sudah lebih baik, atau masih ada kelemahan yang sama?");
   lines.push("4. **Bias Drift**: Apakah bias H4 berubah arah dari analisis ke analisis? Perubahan bias yang konsisten menandakan perubahan tren yang sesungguhnya.");
   lines.push("5. **Over-Trading Guard**: Jika sudah ≥3 WAIT berturut-turut, pertimbangkan — apakah ini memang kondisi sulit, atau ada setup yang terlewat?");
+  lines.push("6. **Validasi Invalidasi**: Tinjau field `invalidation` dan `what_would_change_my_mind` dari siklus terakhir — apakah kondisi itu sudah terpenuhi sekarang? Jika ya, bias lama mungkin sudah tidak valid meski sinyal belum closed.");
 
   return lines.join("\n");
 }
@@ -401,6 +417,47 @@ function getTradingSession(): string {
   if (utcHour >= 12 && utcHour < 16) return "London + New York Overlap — 19:00–23:00 WIB";
   if (utcHour >= 16 && utcHour < 21) return "New York — 23:00–04:00 WIB";
   return "Off-hours / transisi sesi";
+}
+
+// ─── Signal Sanity Validation ─────────────────────────────────────────────────
+
+function validateSignal(
+  signal: Partial<AISignal>,
+  currentPrice: number
+): { valid: boolean; reason?: string } {
+  if (signal.decision === "WAIT") return { valid: true };
+
+  const { entry_price: entry, take_profit: tp, stop_loss: sl, decision } = signal;
+
+  if (entry == null || tp == null || sl == null) {
+    return { valid: false, reason: `${decision} tanpa entry/TP/SL lengkap` };
+  }
+
+  if (decision === "BUY") {
+    if (sl >= entry) {
+      return { valid: false, reason: `BUY geometry rusak: SL ($${sl.toFixed(2)}) ≥ entry ($${entry.toFixed(2)}) — seharusnya SL < entry` };
+    }
+    if (tp <= entry) {
+      return { valid: false, reason: `BUY geometry rusak: TP ($${tp.toFixed(2)}) ≤ entry ($${entry.toFixed(2)}) — seharusnya TP > entry` };
+    }
+  } else if (decision === "SELL") {
+    if (sl <= entry) {
+      return { valid: false, reason: `SELL geometry rusak: SL ($${sl.toFixed(2)}) ≤ entry ($${entry.toFixed(2)}) — seharusnya SL > entry` };
+    }
+    if (tp >= entry) {
+      return { valid: false, reason: `SELL geometry rusak: TP ($${tp.toFixed(2)}) ≥ entry ($${entry.toFixed(2)}) — seharusnya TP < entry` };
+    }
+  }
+
+  const maxDeviation = currentPrice * 0.015;
+  if (Math.abs(entry - currentPrice) > maxDeviation) {
+    return {
+      valid: false,
+      reason: `Entry ($${entry.toFixed(2)}) terlalu jauh dari harga saat ini ($${currentPrice.toFixed(2)}) — deviasi ${Math.abs(entry - currentPrice).toFixed(2)} > max ${maxDeviation.toFixed(2)} (1.5%)`,
+    };
+  }
+
+  return { valid: true };
 }
 
 // ─── Market Close Warning (Weekend Gap Risk) ──────────────────────────────────
@@ -536,13 +593,34 @@ export async function analyzeMarket(
     })),
   };
 
+  // Compute streaks from recent memory — turns history list into explicit numeric awareness
+  const recentMem = memory.slice(0, 10);
+  let waitStreak = 0;
+  for (const m of recentMem) {
+    if (m.decision === "WAIT") waitStreak++;
+    else break;
+  }
+  const latestBiasH4 = recentMem[0]?.bias?.H4 ?? "NEUTRAL";
+  let biasH4Streak = 0;
+  for (const m of recentMem) {
+    if (m.bias?.H4 === latestBiasH4) biasH4Streak++;
+    else break;
+  }
+  const sensoryDataWithMeta = {
+    ...sensoryData,
+    analysis_meta: {
+      wait_streak_consecutive: waitStreak,
+      h4_bias_persistence: `${latestBiasH4} bertahan ${biasH4Streak} siklus berturut-turut`,
+    },
+  };
+
   // Fetch news calendar (non-blocking — fallback to empty if fails)
   const calendarCtx = await getCalendarContext().catch(() => null);
   const calendarSection = calendarCtx ? formatCalendarForAI(calendarCtx) : "";
 
   // Build the full user message: memory + news + market data
   const memoryContext = buildMemoryContext();
-  const marketDataSection = `## 📡 DATA PASAR REAL-TIME SAAT INI\n\n${JSON.stringify(sensoryData, null, 2)}`;
+  const marketDataSection = `## 📡 DATA PASAR REAL-TIME SAAT INI\n\n${JSON.stringify(sensoryDataWithMeta, null, 2)}`;
 
   const parts: string[] = [];
   if (memoryContext) parts.push(memoryContext);
@@ -606,6 +684,20 @@ export async function analyzeMarket(
   parsed.bear_case ??= "-";
   parsed.what_would_change_my_mind ??= "-";
   parsed.lesson ??= "-";
+
+  // Sanity check — catch LLM geometry errors before they reach Telegram
+  const validation = validateSignal(parsed, currentPrice);
+  if (!validation.valid) {
+    logger.warn(
+      { reason: validation.reason, originalDecision: parsed.decision },
+      "Signal geometry invalid — forcing WAIT to prevent malformed trade"
+    );
+    parsed.decision = "WAIT";
+    parsed.entry_price = null;
+    parsed.take_profit = null;
+    parsed.stop_loss = null;
+    parsed.risk_reward_ratio = null;
+  }
 
   // Record to memory AFTER successful parse
   recordAnalysis(parsed, currentPrice, wibTime);
