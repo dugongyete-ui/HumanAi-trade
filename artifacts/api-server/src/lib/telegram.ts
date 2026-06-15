@@ -350,12 +350,41 @@ export function formatChatSignal(
   header += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
 
   if (s.setup_type === "NO_SETUP") {
+    const biasH4 = BIAS_EMOJI[s.timeframe_bias?.H4 ?? "NEUTRAL"] ?? "⚪";
+    const biasH1 = BIAS_EMOJI[s.timeframe_bias?.H1 ?? "NEUTRAL"] ?? "⚪";
+    const biasM15 = BIAS_EMOJI[s.timeframe_bias?.M15 ?? "NEUTRAL"] ?? "⚪";
+    const supportLevel = s.key_levels?.nearest_support;
+    const resistanceLevel = s.key_levels?.nearest_resistance;
+
     let body = header;
     body += `\n📊 Fase: <b>${esc(s.market_phase)}</b>\n`;
-    body += `🧠 Reasoning:\n${esc(s.reasoning)}\n\n`;
-    if (s.what_would_change_my_mind && s.what_would_change_my_mind !== "-") {
-      body += `🔄 <b>Yang perlu terjadi:</b>\n${esc(s.what_would_change_my_mind)}\n\n`;
+    body += `🧭 Bias TF:  H4 ${biasH4}  H1 ${biasH1}  M15 ${biasM15}\n\n`;
+
+    if (supportLevel || resistanceLevel) {
+      body += `📍 <b>Level Kunci yang Perlu Dipantau:</b>\n`;
+      if (resistanceLevel) body += `  🏔️ Resistance: <b>$${resistanceLevel}</b>\n`;
+      if (supportLevel) body += `  🛡️ Support: <b>$${supportLevel}</b>\n`;
+      body += `\n`;
     }
+
+    body += `🧠 <b>Analisis Atlas:</b>\n${esc(s.reasoning)}\n\n`;
+
+    const bullCase = s.bull_case && s.bull_case !== "-" ? s.bull_case : null;
+    const bearCase = s.bear_case && s.bear_case !== "-" ? s.bear_case : null;
+    if (bullCase || bearCase) {
+      if (bullCase) body += `🐂 <b>Bull:</b> <i>${esc(Array.isArray(bullCase) ? bullCase[0] : bullCase)}</i>\n`;
+      if (bearCase) body += `🐻 <b>Bear:</b> <i>${esc(Array.isArray(bearCase) ? bearCase[0] : bearCase)}</i>\n`;
+      body += `\n`;
+    }
+
+    if (s.what_would_change_my_mind && s.what_would_change_my_mind !== "-") {
+      const wtcmm = Array.isArray(s.what_would_change_my_mind)
+        ? s.what_would_change_my_mind[0]
+        : s.what_would_change_my_mind;
+      body += `🔄 <b>Setup akan muncul jika:</b>\n<i>${esc(wtcmm)}</i>\n\n`;
+    }
+
+    body += `⚠️ <i>Kondisi belum ideal — pantau level di atas untuk setup berikutnya.</i>\n`;
     body += `⏰ ${now} WIB`;
     return body;
   }

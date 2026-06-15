@@ -544,6 +544,7 @@ function getTradingSession(): string {
 
 // ─── Signal Sanity Validation ─────────────────────────────────────────────────
 
+/** Full validation: checks geometry + entry proximity to current price (for auto-mode signals) */
 function validateSignal(
   signal: Partial<AISignal>,
   currentPrice: number
@@ -578,6 +579,41 @@ function validateSignal(
       valid: false,
       reason: `Entry ($${entry.toFixed(2)}) terlalu jauh dari harga saat ini ($${currentPrice.toFixed(2)}) — deviasi ${Math.abs(entry - currentPrice).toFixed(2)} > max ${maxDeviation.toFixed(2)} (1.5%)`,
     };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Geometry-only validation for PENDING_SETUP on-demand signals.
+ * Entry is intentionally far from current price (e.g. BUY_LIMIT at a support zone),
+ * so we only check that SL/TP are on the correct side of entry — NOT entry proximity.
+ */
+function validateSignalGeometry(
+  signal: Partial<AISignal>
+): { valid: boolean; reason?: string } {
+  if (signal.decision === "WAIT") return { valid: true };
+
+  const { entry_price: entry, take_profit: tp, stop_loss: sl, decision } = signal;
+
+  if (entry == null || tp == null || sl == null) {
+    return { valid: false, reason: `${decision} tanpa entry/TP/SL lengkap` };
+  }
+
+  if (decision === "BUY") {
+    if (sl >= entry) {
+      return { valid: false, reason: `BUY geometry rusak: SL ($${sl.toFixed(2)}) ≥ entry ($${entry.toFixed(2)})` };
+    }
+    if (tp <= entry) {
+      return { valid: false, reason: `BUY geometry rusak: TP ($${tp.toFixed(2)}) ≤ entry ($${entry.toFixed(2)})` };
+    }
+  } else if (decision === "SELL") {
+    if (sl <= entry) {
+      return { valid: false, reason: `SELL geometry rusak: SL ($${sl.toFixed(2)}) ≤ entry ($${entry.toFixed(2)})` };
+    }
+    if (tp >= entry) {
+      return { valid: false, reason: `SELL geometry rusak: TP ($${tp.toFixed(2)}) ≥ entry ($${entry.toFixed(2)})` };
+    }
   }
 
   return { valid: true };
@@ -626,60 +662,56 @@ User meminta analisis secara aktif melalui Telegram. Permintaan:
 
 > "${userQuery}"
 
-Interpretasikan sendiri gaya/strategi yang dimaksud — timeframe mana yang
-paling relevan, seberapa ketat SL/TP, dst. Gunakan penalaran seperti trader
-profesional yang ditanya langsung oleh kliennya.
+Anda adalah **mentor trading senior** yang ditanya langsung oleh muridnya.
+Jawaban Anda SELALU actionable — selalu ada rencana konkret, bukan penolakan.
+Bahkan jika kondisi belum ideal, Anda menjelaskan "tunggu di level ini, ketika
+kondisi ini terjadi" — bukan "tidak ada setup, saya tidak tahu."
 
 ---
 
-### ⚠️ ATURAN KRITIS MODE ON-DEMAND — BACA SEBELUM MENJAWAB
+### ⚠️ ATURAN BESI MODE ON-DEMAND — WAJIB DIBACA
 
-**PENDING_SETUP adalah jawaban DEFAULT Anda.** Selama Anda punya bias arah
-APAPUN — bahkan lemah — pilih PENDING_SETUP, bukan NO_SETUP.
+**DILARANG KERAS: NO_SETUP kecuali kondisi ekstrem di bawah ini.**
 
-Pohon keputusan yang WAJIB Anda ikuti:
+Sebagai mentor, Anda WAJIB memberikan pandangan arah dan level konkret.
+Tidak ada pasar yang benar-benar "tanpa pandangan" bagi trader berpengalaman.
 
-  Ada bias arah (BUY/SELL) yang bisa diargumentasikan?
-  │
-  ├─ YA → Kondisi SEKARANG memenuhi semua aturan keras?
-  │        (confidence ≥ 0.60 AND confluence ≥ 5 AND R:R ≥ 1.5)
-  │        ├─ YA  → IMMEDIATE_ENTRY
-  │        └─ TIDAK → PENDING_SETUP  ← HAMPIR SELALU PILIHAN INI
-  │                   (tentukan level harga spesifik yang Anda tunggu)
-  │
-  └─ TIDAK SAMA SEKALI → NO_SETUP  ← SANGAT JARANG, hanya jika:
-       • Harga bergerak acak tanpa struktur apapun
-       • Tidak ada support/resistance yang bisa dijadikan acuan
-       • Tidak ada bias dari SATU PUN timeframe
-       • Bahkan sebagai pendapat subjektif pun 0 pandangan
+**Pohon keputusan WAJIB:**
 
-**CONTOH PENGGUNAAN PENDING_SETUP yang BENAR:**
-- Kondisi volatile tapi ada resistance kuat di atas → SELL_LIMIT di resistance tersebut
-- Scalping kondisi spread lebar → tunggu spread normal + price action di level kunci
-- Bias bearish tapi belum ada konfluensi cukup → SELL_LIMIT/SELL_STOP di level yang lebih baik
-- Bias bullish tapi harga terlalu jauh dari demand → BUY_LIMIT di demand zone
-- Harga di resistance makro → SELL_LIMIT di resistance, meski sekarang belum waktunya
+  Kondisi SEKARANG memenuhi: confidence ≥ 0.60 AND confluence ≥ 5 AND R:R ≥ 1.5?
+  ├─ YA  → **IMMEDIATE_ENTRY** — entry sekarang, pantau langsung
+  └─ TIDAK → **PENDING_SETUP** ← INI JAWABAN DEFAULT ANDA
+               Tentukan:
+               • Level harga spesifik yang Anda tunggu (support/resistance/demand/supply zone)
+               • Tipe order: BUY_LIMIT / SELL_LIMIT / BUY_STOP / SELL_STOP
+               • Konfirmasi yang diperlukan saat harga tiba di level tersebut
+               • TP dan SL dihitung dari level pending tersebut
 
-**PENDING_SETUP bukan kelemahan — ini adalah rencana trading profesional.**
-"Saya menunggu harga datang ke level saya" adalah jawaban yang jauh lebih
-berguna daripada "saya tidak tahu."
+**Kapan BOLEH NO_SETUP? HANYA jika SEMUA kondisi berikut terpenuhi:**
+  • Harga bergerak sepenuhnya acak tanpa struktur HH/HL atau LL/LH apapun
+  • Tidak ada support/resistance yang dapat diidentifikasi di SEMUA timeframe
+  • Tidak ada bias sedikitpun dari H4, H1, maupun M15
+  • ATR sangat ekstrem (>200% rata-rata) — noise murni, tidak ada pola
+  Jika SATU SAJA kondisi di atas tidak terpenuhi → PENDING_SETUP, bukan NO_SETUP.
 
 ---
 
-### Tiga jenis respons yang tersedia:
+### Contoh PENDING_SETUP yang BENAR sebagai mentor:
 
-1. **IMMEDIATE_ENTRY** — Entry SEKARANG layak dilakukan
-   ATURAN KERAS: confidence ≥ 0.60, confluence_score ≥ 5, R:R ≥ 1.5.
-   Jika tidak memenuhi → gunakan PENDING_SETUP, bukan NO_SETUP.
+**Skenario: User tanya "ada buy sekarang?" tapi harga sudah naik jauh:**
+→ "Harga sudah terlalu jauh dari demand. BUY_LIMIT di $X (demand zone H1),
+   konfirmasi bullish engulfing di M15 saat tiba di sana. TP $Y, SL $Z."
 
-2. **PENDING_SETUP** — Ada pandangan arah tapi belum layak entry sekarang
-   "entry_price" = level harga spesifik yang Anda tunggu (TIDAK terikat
-   1.5% dari harga sekarang). TP/SL dihitung relatif terhadap level pending.
-   "decision" tetap "BUY" atau "SELL" sesuai arah yang direncanakan.
+**Skenario: User tanya "cari sell" tapi belum ada konfluensi:**
+→ "Bias bearish H4 tapi belum konfirmasi. SELL_LIMIT di $X (resistance H1),
+   tunggu rejection candle. TP $Y, SL $Z."
 
-3. **NO_SETUP** — HANYA jika benar-benar 0% pandangan arah
-   Ini HARUS JARANG SEKALI. Jika ragu antara PENDING_SETUP vs NO_SETUP,
-   pilih PENDING_SETUP. "decision" = "WAIT", semua harga = null.
+**Skenario: Pasar choppy/ranging:**
+→ "Range support $X — resistance $Y. BUY_LIMIT di support $X,
+   SELL_LIMIT di resistance $Y — pilih sesuai arah yang terjadi."
+
+**Ingat:** entry_price untuk PENDING_SETUP TIDAK HARUS dekat harga sekarang.
+Justru entry yang baik adalah entry yang menunggu harga datang ke level Anda.
 
 ---
 
@@ -688,22 +720,22 @@ berguna daripada "saya tidak tahu."
 - **"setup_type"**: "IMMEDIATE_ENTRY" | "PENDING_SETUP" | "NO_SETUP"
 - **"pending_order_type"**: "BUY_LIMIT" | "SELL_LIMIT" | "BUY_STOP" | "SELL_STOP" | null
   Isi HANYA jika PENDING_SETUP. Logika:
-  • BUY_LIMIT  → level entry DI BAWAH harga sekarang (tunggu harga turun)
-  • BUY_STOP   → level entry DI ATAS harga sekarang (konfirmasi breakout naik)
+  • BUY_LIMIT  → level entry DI BAWAH harga sekarang (tunggu harga turun ke demand)
+  • BUY_STOP   → level entry DI ATAS harga sekarang (masuk setelah breakout naik)
   • SELL_LIMIT → level entry DI ATAS harga sekarang (tunggu harga naik ke resistance)
-  • SELL_STOP  → level entry DI BAWAH harga sekarang (konfirmasi breakout turun)
+  • SELL_STOP  → level entry DI BAWAH harga sekarang (masuk setelah breakdown)
 - **"pending_trigger"**: string | null
-  Isi HANYA jika PENDING_SETUP. Kondisi konfirmasi spesifik yang diperlukan
-  saat harga mencapai level tersebut (bukan cuma "harga sampai di X").
+  Isi HANYA jika PENDING_SETUP. Kondisi konfirmasi spesifik saat harga tiba
+  di level tersebut (candle pattern, break of structure, dll — bukan cuma "harga sampai di X").
 - **"strategy_label"**: string
   Satu kalimat gaya analisis: "Scalping M5/M15, target 10-15 pips, SL ketat"
   atau "Swing H4/D1, menunggu pullback ke demand zone, target lebih lebar", dll.
 
 ---
 
-Berdasarkan semua konteks di atas (memori, kalender ekonomi, data pasar,
-DAN permintaan user), jawab SEKARANG dalam format JSON yang diperluas.
-Ingat: default Anda adalah PENDING_SETUP jika ada bias arah apapun.`;
+Berdasarkan semua data di atas, jawab sebagai mentor trading senior.
+Selalu ada rencana. Selalu ada level. Selalu ada jawaban konkret.
+Default: PENDING_SETUP. NO_SETUP hanya dalam kondisi ekstrem yang sangat jarang.`;
 }
 
 // ─── Shared Context Builder ────────────────────────────────────────────────────
@@ -929,15 +961,45 @@ export async function analyzeMarketOnDemand(
     parsed.decision = "WAIT";
     parsed.entry_price = null; parsed.take_profit = null;
     parsed.stop_loss = null; parsed.risk_reward_ratio = null;
-  } else {
-    // Geometry check still applies (SL/TP side relative to entry)
-    const validation = validateSignal(parsed, currentPrice);
+  } else if (parsed.setup_type === "PENDING_SETUP") {
+    // PENDING_SETUP: entry is intentionally at a future level (support/resistance zone),
+    // so we only validate SL/TP geometry — NOT entry proximity to current price.
+    const validation = validateSignalGeometry(parsed);
     if (!validation.valid) {
-      logger.warn({ reason: validation.reason }, "On-demand signal geometry invalid — downgrading to NO_SETUP");
+      logger.warn({ reason: validation.reason }, "On-demand PENDING_SETUP geometry invalid — downgrading to NO_SETUP");
       parsed.setup_type = "NO_SETUP";
       parsed.decision = "WAIT";
       parsed.entry_price = null; parsed.take_profit = null;
       parsed.stop_loss = null; parsed.risk_reward_ratio = null;
+    }
+  } else {
+    // IMMEDIATE_ENTRY: full geometry + proximity check
+    const validation = validateSignal(parsed, currentPrice);
+    if (!validation.valid) {
+      // Salvage as PENDING_SETUP instead of hard-dropping to NO_SETUP:
+      // entry might be slightly off — treat it as a pending level to watch.
+      logger.warn({ reason: validation.reason }, "On-demand IMMEDIATE_ENTRY invalid — salvaging as PENDING_SETUP");
+      parsed.setup_type = "PENDING_SETUP";
+      // Infer pending order type from direction vs current price
+      if (parsed.entry_price != null) {
+        if (parsed.decision === "BUY") {
+          parsed.pending_order_type = parsed.entry_price < currentPrice ? "BUY_LIMIT" : "BUY_STOP";
+        } else if (parsed.decision === "SELL") {
+          parsed.pending_order_type = parsed.entry_price > currentPrice ? "SELL_LIMIT" : "SELL_STOP";
+        }
+      }
+      if (!parsed.pending_trigger || parsed.pending_trigger === "-") {
+        parsed.pending_trigger = "Tunggu harga mencapai level entry, konfirmasi dengan price action sebelum masuk.";
+      }
+      // Geometry-only re-validation
+      const geoCheck = validateSignalGeometry(parsed);
+      if (!geoCheck.valid) {
+        logger.warn({ reason: geoCheck.reason }, "Salvage to PENDING_SETUP also failed geometry — downgrading to NO_SETUP");
+        parsed.setup_type = "NO_SETUP";
+        parsed.decision = "WAIT";
+        parsed.entry_price = null; parsed.take_profit = null;
+        parsed.stop_loss = null; parsed.risk_reward_ratio = null;
+      }
     }
   }
 
