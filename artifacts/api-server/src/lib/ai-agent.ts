@@ -3,6 +3,7 @@ import type { USDProxy } from "./deriv-client.js";
 import { logger } from "./logger.js";
 import { getCalendarContext, formatCalendarForAI } from "./news-calendar.js";
 import { loadPersistedMemory, saveMemoryToDisk } from "./persistent-memory.js";
+import { getLongTermNotes, applyLTMOps, type LTMOp } from "./long-term-memory.js";
 
 const AI_API_URL = process.env.AI_API_URL ?? "https://qwn-api--miok1qpgd.replit.app/v1/chat/completions";
 const AI_API_KEY = process.env.AI_API_KEY ?? "";
@@ -168,7 +169,7 @@ WAIT adalah keputusan profesional — bukan kelemahan
 
 Respons HANYA dalam format JSON valid berikut — tidak ada teks di luar JSON, tidak ada markdown code block, tidak ada pembuka/penutup:
 
-{"decision":"BUY|SELL|WAIT","confidence":0.0,"entry_price":null,"take_profit":null,"stop_loss":null,"risk_reward_ratio":null,"market_phase":"TRENDING_UP|TRENDING_DOWN|RANGING|CONSOLIDATION|VOLATILE|DISTRIBUTION|ACCUMULATION","timeframe_bias":{"H4":"BULLISH|BEARISH|NEUTRAL","H1":"BULLISH|BEARISH|NEUTRAL","M15":"BULLISH|BEARISH|NEUTRAL"},"confluence_score":0,"key_levels":{"nearest_resistance":null,"nearest_support":null},"market_context":"Deskripsi singkat kondisi pasar saat ini: fase, siapa yang dominan, level kritis","reasoning":"Penjelasan naratif lengkap dalam Bahasa Indonesia yang mencerminkan proses berpikir Langkah 1-5: mulai dari D1 big picture, konfirmasi H4/H1, mood pasar, konfirmasi entry M15/M5, hasil confluence check, dasar penentuan TP/SL, dan faktor risiko tambahan jika ada.","invalidation":"Kondisi atau level spesifik yang jika tercapai berarti analisis ini SALAH dan sinyal harus segera dibatalkan","bull_case":"3 argumen teknikal terkuat mengapa harga NAIK saat ini — spesifik dan berbasis data yang tersedia (level, indikator, struktur)","bear_case":"3 argumen teknikal terkuat mengapa harga TURUN saat ini — spesifik dan berbasis data yang tersedia (level, indikator, struktur)","what_would_change_my_mind":"Kondisi teknikal atau level harga spesifik yang jika terjadi akan membalikkan keputusan ini sepenuhnya","lesson":"1-2 kalimat insight kualitatif dari kondisi pasar saat ini yang berguna untuk diingat di siklus berikutnya — berisi pola atau nuansa yang tidak tertangkap angka (contoh: 'resistance H1 $X sudah diuji 3x minggu ini, setiap breakout gagal — level ini sangat kuat')"}
+{"decision":"BUY|SELL|WAIT","confidence":0.0,"entry_price":null,"take_profit":null,"stop_loss":null,"risk_reward_ratio":null,"market_phase":"TRENDING_UP|TRENDING_DOWN|RANGING|CONSOLIDATION|VOLATILE|DISTRIBUTION|ACCUMULATION","timeframe_bias":{"H4":"BULLISH|BEARISH|NEUTRAL","H1":"BULLISH|BEARISH|NEUTRAL","M15":"BULLISH|BEARISH|NEUTRAL"},"confluence_score":0,"key_levels":{"nearest_resistance":null,"nearest_support":null},"market_context":"Deskripsi singkat kondisi pasar saat ini: fase, siapa yang dominan, level kritis","reasoning":"Penjelasan naratif lengkap dalam Bahasa Indonesia yang mencerminkan proses berpikir Langkah 1-5: mulai dari D1 big picture, konfirmasi H4/H1, mood pasar, konfirmasi entry M15/M5, hasil confluence check, dasar penentuan TP/SL, dan faktor risiko tambahan jika ada.","invalidation":"Kondisi atau level spesifik yang jika tercapai berarti analisis ini SALAH dan sinyal harus segera dibatalkan","bull_case":"3 argumen teknikal terkuat mengapa harga NAIK saat ini — spesifik dan berbasis data yang tersedia (level, indikator, struktur)","bear_case":"3 argumen teknikal terkuat mengapa harga TURUN saat ini — spesifik dan berbasis data yang tersedia (level, indikator, struktur)","what_would_change_my_mind":"Kondisi teknikal atau level harga spesifik yang jika terjadi akan membalikkan keputusan ini sepenuhnya","lesson":"1-2 kalimat insight kualitatif dari kondisi pasar saat ini yang berguna untuk diingat di siklus berikutnya — berisi pola atau nuansa yang tidak tertangkap angka (contoh: 'resistance H1 $X sudah diuji 3x minggu ini, setiap breakout gagal — level ini sangat kuat')","long_term_memory_ops":null}
 
 Catatan Output:
 - Jika "decision" adalah "WAIT", maka entry_price, take_profit, stop_loss, dan risk_reward_ratio WAJIB null
@@ -176,7 +177,32 @@ Catatan Output:
 - confluence_score adalah integer 0-10 yang merepresentasikan berapa banyak faktor/indikator yang selaras
 - bull_case dan bear_case WAJIB diisi — bahkan saat WAIT, menimbang kedua sisi adalah inti dari analisis yang jujur
 - lesson WAJIB diisi — isi dengan insight yang tidak bisa diwakili angka; jika tidak ada yang istimewa, tuliskan observasi pasar yang paling relevan saat ini
-- Gunakan Bahasa Indonesia yang profesional, jelas, dan mudah dimengerti di semua field teks`;
+- Gunakan Bahasa Indonesia yang profesional, jelas, dan mudah dimengerti di semua field teks
+
+---
+
+## 10. MEMORI JANGKA PANJANG (LONG-TERM NOTES)
+
+Anda memiliki dua lapis memori:
+1. **Memori kerja (rolling 20)** — riwayat siklus otomatis, terganti seiring waktu
+2. **Catatan permanen (long_term_notes)** — insight yang Anda sendiri putuskan untuk disimpan karena nilainya bertahan lama
+
+Field **"long_term_memory_ops"** memungkinkan Anda mengelola catatan permanen ini. Isi dengan array operasi (atau null jika tidak ada perubahan):
+
+- **ADD** — tambah catatan baru: \`{"op":"ADD","content":"teks insight"}\`
+- **UPDATE** — perbarui catatan yang masih relevan tapi perlu revisi: \`{"op":"UPDATE","id":"<id>","content":"teks baru"}\`
+- **DELETE** — hapus catatan yang sudah tidak berlaku: \`{"op":"DELETE","id":"<id>"}\`
+
+**Kapan ADD?** Ketika Anda menemukan pola yang kemungkinan berlaku beberapa hari ke depan — bukan hanya siklus ini. Contoh:
+- Level harga yang sudah diuji berulang kali dan terbukti kuat
+- Karakteristik pasar yang tidak biasa (volatilitas ekstrem, divergensi tidak lazim)
+- Pola bias yang konsisten dalam sesi tertentu
+
+**Kapan DELETE/UPDATE?** Saat Anda melihat catatan yang sudah tidak relevan di bagian "Catatan Permanen" prompt — misalnya harga sudah jauh melewati level yang disebutkan, atau kondisi yang dicatat sudah berubah total.
+
+**Kapasitas: maks 10 catatan.** Jika sudah penuh, hapus yang paling tidak relevan sebelum menambah yang baru.
+
+Jika tidak ada perubahan yang diperlukan, set "long_term_memory_ops" ke null.`;
 
 // ─── AI Signal Type ────────────────────────────────────────────────────────────
 
@@ -205,6 +231,7 @@ export interface AISignal {
   bear_case: string | string[];
   what_would_change_my_mind: string | string[];
   lesson: string;
+  long_term_memory_ops?: LTMOp[] | null;
 }
 
 // ─── Memory System ─────────────────────────────────────────────────────────────
@@ -230,6 +257,11 @@ interface MemoryEntry {
   exit_time?: string;
 }
 
+interface ConfidenceBandStats {
+  wins: number;
+  losses: number;
+}
+
 interface SessionStats {
   wins: number;
   losses: number;
@@ -238,6 +270,13 @@ interface SessionStats {
   waitCount: number;
   lastMarketPhases: string[]; // last 5 phases
   lastBiasH4: string[];       // last 5 H4 bias readings
+  // Metacognition — calibration by confidence band
+  confidenceBands: {
+    high: ConfidenceBandStats;    // confidence >= 0.80
+    medium: ConfidenceBandStats;  // 0.60 <= confidence < 0.80
+  };
+  // Metacognition — performance per market phase
+  phasePerformance: Record<string, { wins: number; losses: number }>;
 }
 
 const MAX_MEMORY = 20;
@@ -250,6 +289,11 @@ const sessionStats: SessionStats = {
   waitCount: 0,
   lastMarketPhases: [],
   lastBiasH4: [],
+  confidenceBands: {
+    high: { wins: 0, losses: 0 },
+    medium: { wins: 0, losses: 0 },
+  },
+  phasePerformance: {},
 };
 
 // Load persisted memory from disk on startup
@@ -266,6 +310,10 @@ const sessionStats: SessionStats = {
       if (typeof s.waitCount === "number") sessionStats.waitCount = s.waitCount;
       if (Array.isArray(s.lastMarketPhases)) sessionStats.lastMarketPhases = s.lastMarketPhases;
       if (Array.isArray(s.lastBiasH4)) sessionStats.lastBiasH4 = s.lastBiasH4;
+      if (s.confidenceBands) sessionStats.confidenceBands = s.confidenceBands;
+      if (s.phasePerformance && typeof s.phasePerformance === "object") {
+        sessionStats.phasePerformance = s.phasePerformance;
+      }
     }
   }
 })();
@@ -331,19 +379,49 @@ export function recordSignalResult(result: "WIN" | "LOSS", exitPrice: number): v
       hour: "2-digit",
       minute: "2-digit",
     });
+
+    // ─── Metacognition: track by confidence band ─────────────────────────────
+    const isWin = result === "WIN";
+    const band = active.confidence >= 0.80 ? "high" : "medium";
+    if (isWin) sessionStats.confidenceBands[band].wins++;
+    else sessionStats.confidenceBands[band].losses++;
+
+    // ─── Metacognition: track by market phase ────────────────────────────────
+    const phase = active.market_phase;
+    if (phase) {
+      const pp = sessionStats.phasePerformance;
+      if (!pp[phase]) pp[phase] = { wins: 0, losses: 0 };
+      if (isWin) pp[phase].wins++;
+      else pp[phase].losses++;
+    }
   }
   saveMemoryToDisk(memory, sessionStats);
 }
 
 /** Build natural-language memory context injected into each AI call */
 function buildMemoryContext(): string {
-  if (memory.length === 0) return "";
+  const ltNotes = getLongTermNotes();
+  const hasMemory = memory.length > 0;
+  if (!hasMemory && ltNotes.length === 0) return "";
 
   const lines: string[] = [];
   lines.push("## 🧠 MEMORI ATLAS — Konteks & Ingatan Siklus Sebelumnya\n");
   lines.push("PENTING: Gunakan konteks di bawah ini untuk membuat analisis yang KONSISTEN dan EVOLUSIONER, bukan analisis yang mulai dari nol. Perhatikan apakah karakter pasar berubah, apakah bias sebelumnya terbukti benar, dan evaluasi keputusan lalu.\n");
 
-  // --- Session stats
+  // ── Long-term notes (injected FIRST — highest priority context) ────────────
+  if (ltNotes.length > 0) {
+    lines.push("### 📌 Catatan Permanen (Long-Term Memory):");
+    lines.push("Insight di bawah ini Anda simpan sendiri karena dianggap relevan jangka panjang. Tinjau apakah masih berlaku — hapus yang sudah tidak relevan, perbarui yang perlu revisi.");
+    ltNotes.forEach((n) => {
+      const age = Math.round((Date.now() - new Date(n.createdAt).getTime()) / (1000 * 60 * 60));
+      lines.push(`  [${n.id.slice(0, 8)}] (${age}j lalu) ${n.content}`);
+    });
+    lines.push("");
+  }
+
+  if (!hasMemory) return lines.join("\n");
+
+  // ── Session stats ──────────────────────────────────────────────────────────
   const winRate = (sessionStats.wins + sessionStats.losses) > 0
     ? Math.round(sessionStats.wins / (sessionStats.wins + sessionStats.losses) * 100)
     : null;
@@ -358,6 +436,51 @@ function buildMemoryContext(): string {
   }
   if (sessionStats.lastBiasH4.length > 0) {
     lines.push(`- Bias H4 dominan: ${sessionStats.lastBiasH4.join(" → ")}`);
+  }
+
+  // ── Self-calibration (metacognition) ──────────────────────────────────────
+  const hB = sessionStats.confidenceBands.high;
+  const mB = sessionStats.confidenceBands.medium;
+  const hTotal = hB.wins + hB.losses;
+  const mTotal = mB.wins + mB.losses;
+
+  if (hTotal > 0 || mTotal > 0) {
+    lines.push("\n### 🔬 Kalibrasi Diri (Metacognition):");
+    lines.push("Gunakan data ini untuk mengevaluasi seberapa terkalibrasi confidence score Anda:");
+
+    if (hTotal > 0) {
+      const hRate = Math.round(hB.wins / hTotal * 100);
+      const calibNote = hRate >= 70 ? "✅ terkalibrasi baik" : hRate >= 50 ? "⚠️ cukup terkalibrasi" : "🔴 OVERCONFIDENT — confidence tinggi tapi sering salah";
+      lines.push(`  • Confidence ≥80%: ${hB.wins}W / ${hB.losses}L → Win Rate **${hRate}%** — ${calibNote}`);
+    } else {
+      lines.push("  • Confidence ≥80%: belum ada data (belum ada sinyal closed di band ini)");
+    }
+
+    if (mTotal > 0) {
+      const mRate = Math.round(mB.wins / mTotal * 100);
+      const calibNote = mRate >= 60 ? "✅ terkalibrasi baik" : mRate >= 40 ? "⚠️ cukup terkalibrasi" : "🔴 akurasi rendah di band ini";
+      lines.push(`  • Confidence 60–79%: ${mB.wins}W / ${mB.losses}L → Win Rate **${mRate}%** — ${calibNote}`);
+    } else {
+      lines.push("  • Confidence 60–79%: belum ada data");
+    }
+
+    // Phase performance — show top 3 most traded phases
+    const phases = Object.entries(sessionStats.phasePerformance)
+      .filter(([, v]) => v.wins + v.losses > 0)
+      .sort(([, a], [, b]) => (b.wins + b.losses) - (a.wins + a.losses))
+      .slice(0, 3);
+
+    if (phases.length > 0) {
+      lines.push("  • Performa per fase pasar:");
+      phases.forEach(([phase, { wins, losses }]) => {
+        const total = wins + losses;
+        const rate = Math.round(wins / total * 100);
+        const emoji = rate >= 60 ? "✅" : rate >= 40 ? "⚠️" : "🔴";
+        lines.push(`    ${emoji} ${phase}: ${wins}W/${losses}L (${rate}%)`);
+      });
+    }
+
+    lines.push("  → Perhatikan: jika win rate di band confidence tinggi LEBIH RENDAH dari band medium, Anda mungkin overconfident saat market dalam kondisi tertentu.");
   }
 
   // --- Recent analyses
@@ -701,6 +824,15 @@ export async function analyzeMarket(
 
   // Record to memory AFTER successful parse
   recordAnalysis(parsed, currentPrice, wibTime);
+
+  // Apply long-term memory operations (ADD/UPDATE/DELETE) if AI returned any
+  if (Array.isArray(parsed.long_term_memory_ops) && parsed.long_term_memory_ops.length > 0) {
+    applyLTMOps(parsed.long_term_memory_ops);
+    logger.info(
+      { ops: parsed.long_term_memory_ops.map((o) => o.op) },
+      "Long-term memory updated by AI"
+    );
+  }
 
   logger.info(
     { decision: parsed.decision, confidence: parsed.confidence, memoryEntries: memory.length },

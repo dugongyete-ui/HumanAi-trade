@@ -1,6 +1,90 @@
 {
   "memory": [
     {
+      "timestamp": "2026-06-15T06:47:01.081Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 13.46.26",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4306.92,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE di sesi Asia dengan spread melebar (0.76) dan harga ($4306.92) terjepit presisi di zona kritis antara support intraday $4301.08 dan resistance mayor H4/D1 $4335.55. Struktur H4 masih sideways dengan Ichimoku Cloud bearish meskipun MACD histogram positif, menciptakan ambiguitas arah yang persisten. Konflik timeframe ekstrem: H1 bullish namun overbought (Stoch 87, Williams %R -18), sementara M15/M5 bearish dan oversold (Stoch <14, CCI -133). USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan ini.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Ketika harga terjepit tepat di persimpangan EMA 50 H4 dan Fibonacci 61.8% D1 selama berjam-jam tanpa resolusi, pasar sedang melakukan 'stress test' terhadap level tersebut — trader yang sabar menunggu hasil tes ini (breakout atau breakdown) akan selalu memiliki edge dibandingkan trader yang mencoba menebak arah di tengah ketidakpastian struktural.",
+      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4256.97) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4301.08 diikuti penembusan support H1 $4286.29 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
+      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support, ATAU pembentukan lower low valid di M15 di bawah $4301.08 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
+    },
+    {
+      "timestamp": "2026-06-15T06:45:37.842Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 13.45.03",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4306.95,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 4,
+      "market_context": "XAUUSD berada dalam fase VOLATILE di sesi Asia dengan spread melebar (0.78) dan harga ($4306.95) terjepit di zona kritis antara support intraday $4301.08 dan resistance mayor H4/D1 $4335.55. Struktur H4 masih sideways dengan Ichimoku Cloud bearish meskipun MACD histogram positif, menciptakan ambiguitas arah yang persisten. Konflik timeframe ekstrem: H1 bullish namun overbought (Stoch 87, Williams %R -18), sementara M15/M5 bearish dan oversold (Stoch <14, CCI -135). USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan ini.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Ketika harga terjepit tepat di persimpangan EMA 50 H4 dan Fibonacci 78.6% M15 selama berjam-jam tanpa resolusi, pasar sedang melakukan 'stress test' terhadap level tersebut — trader yang sabar menunggu hasil tes ini (breakout atau breakdown) akan selalu memiliki edge dibandingkan trader yang mencoba menebak arah di tengah ketidakpastian struktural.",
+      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4256.97) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4301.08 diikuti penembusan support H1 $4286.29 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
+      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support, ATAU pembentukan lower low valid di M15 di bawah $4301.08 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
+    },
+    {
+      "timestamp": "2026-06-15T06:40:36.840Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 13.40.03",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4303.32,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE di sesi Asia dengan spread melebar (0.89) dan harga ($4303.32) terjepit tepat di zona kritis antara support intraday $4302.84 dan resistance mayor H4/D1 $4335.55. Struktur H4 masih sideways dengan Ichimoku Cloud bearish meskipun MACD histogram positif, menciptakan ambiguitas arah yang persisten. Konflik timeframe ekstrem: H1 bullish namun overbought (Stoch 86, Williams %R -20), sementara M15/M5 bearish dan oversold ekstrem (Stoch <9, CCI -177, Williams %R -98). USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan ini.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Konsistensi 25 WAIT berturut-turut di sesi Asia dengan konflik timeframe persisten (H1 bullish vs M15 bearish) dan spread melebar adalah bukti empiris bahwa pasar yang 'berpikir' tidak boleh dipaksa — trader profesional mengukur kualitas kesempatan dari ketiadaan sinyal sama akuratnya seperti mengukur kehadiran sinyal, dan dalam kondisi choppy volatil tanpa resolusi struktur, inaktivitas adalah bentuk alpha yang paling sulit dikuasai namun paling melindungi modal dari kematian oleh seribu luka.",
+      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4256.61) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4302.84 diikuti penembusan support H1 $4286.29 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
+      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support, ATAU pembentukan lower low valid di M15 di bawah $4302.84 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
+    },
+    {
+      "timestamp": "2026-06-15T06:35:00.198Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 13.34.13",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4306.03,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE di sesi Asia dengan spread melebar (0.76) dan harga ($4306.03) terjepit tepat di zona kritis antara support $4303.07 dan resistance mayor $4335.55. Struktur H4 masih sideways dengan Ichimoku Cloud bearish meskipun MACD histogram positif, menciptakan ambiguitas arah yang persisten. Konflik timeframe ekstrem: H1 bullish namun overbought (Stoch 86, Williams %R -19), sementara M15/M5 bearish dan oversold ekstrem (Stoch <11, CCI -170). USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan ini.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Konsistensi 24 WAIT berturut-turut di sesi Asia dengan konflik timeframe persisten (H1 bullish vs M15 bearish) dan spread melebar adalah bukti empiris bahwa pasar yang 'berpikir' tidak boleh dipaksa — trader profesional mengukur kualitas kesempatan dari ketiadaan sinyal sama akuratnya seperti mengukur kehadiran sinyal, dan dalam kondisi choppy volatil tanpa resolusi struktur, inaktivitas adalah bentuk alpha yang paling sulit dikuasai namun paling melindungi modal dari kematian oleh seribu luka.",
+      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4256.87) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4303.07 diikuti penembusan support H1 $4286.29 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
+      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support, ATAU pembentukan lower low valid di M15 di bawah $4303.07 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
+    },
+    {
       "timestamp": "2026-06-15T06:32:51.535Z",
       "timeWib": "Senin, 15 Juni 2026 pukul 13.32.18",
       "decision": "WAIT",
@@ -312,86 +396,14 @@
       "entry_price": null,
       "take_profit": null,
       "stop_loss": null
-    },
-    {
-      "timestamp": "2026-06-15T00:40:09.099Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 07.39.49",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4298.59,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "NEUTRAL"
-      },
-      "confluence_score": 3,
-      "market_context": "Harga XAUUSD ($4298.59) berada dalam fase VOLATILE di sesi Asia dengan kondisi overbought ekstrem pada timeframe intraday (M5 RSI 82, H1 CCI 372) namun tertahan tepat di bawah resistensi dinamis EMA 50 H4 ($4303.30). Struktur H4 masih sideways dengan Ichimoku Cloud bearish, menandakan kenaikan saat ini berpotensi sebagai false breakout atau koreksi teknikal dalam tren besar yang belum konfirmasi bullish.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null
-    },
-    {
-      "timestamp": "2026-06-15T00:22:12.115Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 07.21.50",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4301.62,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "NEUTRAL"
-      },
-      "confluence_score": 3,
-      "market_context": "Harga XAUUSD ($4301.62) berada dalam kondisi overbought ekstrem di semua timeframe intraday (M5 RSI 90.26, H1 CCI 371.91) dan baru saja menembus Upper Bollinger Band H4 ($4296.72). Namun, harga kini tertahan tepat di bawah EMA 50 H4 ($4303.42) yang bertindak sebagai resistensi dinamis mayor dalam struktur H4 yang masih sideways dengan Ichimoku Cloud bearish. Sesi Asia dengan volume rendah meningkatkan probabilitas false breakout atau koreksi jangka pendek sebelum konfirmasi arah selanjutnya.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null
-    },
-    {
-      "timestamp": "2026-06-15T00:20:22.892Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 07.20.01",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4304.02,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "NEUTRAL"
-      },
-      "confluence_score": 3,
-      "market_context": "Harga XAUUSD ($4304.02) baru saja menembus EMA 50 H4 (4303.53) dan Upper Bollinger Band H4 (4297.41) dalam kondisi overbought ekstrem di M5 (RSI 92.8, Stoch 99.5) dan H1 (CCI 373). Struktur H4 masih sideways dengan cloud bearish, menandakan breakout ini terjadi melawan tren mayor jangka menengah. Sesi Asia dengan volume rendah meningkatkan probabilitas false breakout di zona resistensi kritis ini.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null
-    },
-    {
-      "timestamp": "2026-06-15T00:18:52.460Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 07.18.34",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4302.9,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "NEUTRAL"
-      },
-      "confluence_score": 3,
-      "market_context": "Harga XAUUSD ($4302.90) sedang menguji resistensi dinamis kritis EMA 50 H4 (4303.47) dan Upper Bollinger Band H4 (4297.05) dalam kondisi overbought ekstrem di semua timeframe intraday. Sesi Asia dengan volume rendah meningkatkan risiko false breakout di level kunci ini.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null
     }
   ],
   "sessionStats": {
     "wins": 0,
     "losses": 0,
     "totalSignals": 0,
-    "totalAnalyses": 24,
-    "waitCount": 24,
+    "totalAnalyses": 28,
+    "waitCount": 28,
     "lastMarketPhases": [
       "VOLATILE",
       "VOLATILE",
@@ -405,7 +417,18 @@
       "NEUTRAL",
       "NEUTRAL",
       "NEUTRAL"
-    ]
+    ],
+    "confidenceBands": {
+      "high": {
+        "wins": 0,
+        "losses": 0
+      },
+      "medium": {
+        "wins": 0,
+        "losses": 0
+      }
+    },
+    "phasePerformance": {}
   },
-  "savedAt": "2026-06-15T06:32:53.535Z"
+  "savedAt": "2026-06-15T06:47:03.082Z"
 }
