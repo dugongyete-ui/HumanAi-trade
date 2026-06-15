@@ -1,6 +1,24 @@
 {
   "memory": [
     {
+      "timestamp": "2026-06-15T00:22:12.115Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 07.21.50",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4301.62,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "NEUTRAL"
+      },
+      "confluence_score": 3,
+      "market_context": "Harga XAUUSD ($4301.62) berada dalam kondisi overbought ekstrem di semua timeframe intraday (M5 RSI 90.26, H1 CCI 371.91) dan baru saja menembus Upper Bollinger Band H4 ($4296.72). Namun, harga kini tertahan tepat di bawah EMA 50 H4 ($4303.42) yang bertindak sebagai resistensi dinamis mayor dalam struktur H4 yang masih sideways dengan Ichimoku Cloud bearish. Sesi Asia dengan volume rendah meningkatkan probabilitas false breakout atau koreksi jangka pendek sebelum konfirmasi arah selanjutnya.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null
+    },
+    {
       "timestamp": "2026-06-15T00:20:22.892Z",
       "timeWib": "Senin, 15 Juni 2026 pukul 07.20.01",
       "decision": "WAIT",
@@ -113,8 +131,8 @@
     "wins": 0,
     "losses": 0,
     "totalSignals": 0,
-    "totalAnalyses": 6,
-    "waitCount": 6,
+    "totalAnalyses": 7,
+    "waitCount": 7,
     "lastMarketPhases": [
       "VOLATILE",
       "VOLATILE",
@@ -130,5 +148,5 @@
       "NEUTRAL"
     ]
   },
-  "savedAt": "2026-06-15T00:20:24.892Z"
+  "savedAt": "2026-06-15T00:22:14.115Z"
 }
