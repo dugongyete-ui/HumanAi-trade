@@ -1,6 +1,42 @@
 {
   "memory": [
     {
+      "timestamp": "2026-06-15T00:18:20.508Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 07.18.01",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4303.05,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "NEUTRAL"
+      },
+      "confluence_score": 3,
+      "market_context": "Harga XAUUSD ($4303.05) sedang menguji resistensi dinamis kritis EMA 50 H4 (4303.48) dan Upper Bollinger Band H4 (4297.07) dalam kondisi overbought ekstrem di semua timeframe intraday. Sesi Asia dengan volume rendah meningkatkan risiko false breakout di level kunci ini.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null
+    },
+    {
+      "timestamp": "2026-06-15T00:17:24.189Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 07.17.01",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4303.28,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "NEUTRAL"
+      },
+      "confluence_score": 3,
+      "market_context": "Harga XAUUSD saat ini ($4303.28) berada tepat di zona resistensi dinamis kritis EMA 50 H4 (4303.50) dan Upper Bollinger Band H4 (4297.21). Kondisi pasar sangat volatil dengan indikator overbought ekstrem di M5 (RSI 92.7, Stoch 99.5) dan H1 (CCI 372), sementara struktur H4 masih sideways/bearish cloud. Sesi Asia dengan volume rendah meningkatkan probabilitas false breakout di level kunci ini.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null
+    },
+    {
       "timestamp": "2026-06-15T00:16:19.814Z",
       "timeWib": "Senin, 15 Juni 2026 pukul 07.16.01",
       "decision": "WAIT",
@@ -41,16 +77,20 @@
     "wins": 0,
     "losses": 0,
     "totalSignals": 0,
-    "totalAnalyses": 2,
-    "waitCount": 2,
+    "totalAnalyses": 4,
+    "waitCount": 4,
     "lastMarketPhases": [
+      "VOLATILE",
+      "VOLATILE",
       "VOLATILE",
       "VOLATILE"
     ],
     "lastBiasH4": [
       "NEUTRAL",
+      "NEUTRAL",
+      "NEUTRAL",
       "NEUTRAL"
     ]
   },
-  "savedAt": "2026-06-15T00:16:21.814Z"
+  "savedAt": "2026-06-15T00:18:22.508Z"
 }

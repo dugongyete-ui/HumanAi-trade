@@ -79,7 +79,7 @@ AI menerima sebelum analisis:
 
 ## Architecture Decisions
 
-- **Analisis 1 menit**: cron `*/1 * * * *` — lebih responsif dari 15 menit
+- **Analisis 5 menit**: cron `*/5 * * * *` — balance antara responsif dan hemat biaya API
 - **State machine**: ANALYZING ↔ MONITORING — tidak analisis saat ada sinyal aktif
 - **Market closed**: Deriv XAUUSD tutup weekend — bot skip siklus, log WARN, retry menit berikutnya. NORMAL.
 - **Confidence threshold**: 60% minimum untuk kirim sinyal ke Telegram

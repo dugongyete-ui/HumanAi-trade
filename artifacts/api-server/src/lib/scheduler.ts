@@ -9,7 +9,7 @@ import {
 import { sendMessage, formatSignal, formatResult, formatPartialTP } from "./telegram.js";
 import { logger } from "./logger.js";
 
-const CRON_SCHEDULE = "*/1 * * * *";
+const CRON_SCHEDULE = "*/5 * * * *";
 const MONITOR_INTERVAL_MS = 10_000;
 const MARKET_CACHE_TTL = 3 * 60 * 1000;
 
