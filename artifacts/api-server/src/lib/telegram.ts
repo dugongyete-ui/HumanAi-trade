@@ -420,8 +420,12 @@ export function formatChatSignal(
 
   body += `\n🧠 Reasoning:\n${esc(s.reasoning)}\n`;
 
-  const bullCase = s.bull_case && s.bull_case !== "-" ? s.bull_case : null;
-  const bearCase = s.bear_case && s.bear_case !== "-" ? s.bear_case : null;
+  const toStr = (v: string | string[] | null | undefined): string | null => {
+    if (!v || v === "-") return null;
+    return Array.isArray(v) ? v.join(" • ") : v;
+  };
+  const bullCase = toStr(s.bull_case);
+  const bearCase = toStr(s.bear_case);
   if (bullCase || bearCase) {
     body += `\n`;
     if (bullCase) body += `🐂 Bull: ${esc(bullCase)}\n`;
@@ -432,8 +436,9 @@ export function formatChatSignal(
     body += `\n❌ Invalidasi: ${esc(s.invalidation)}\n`;
   }
 
-  if (s.what_would_change_my_mind && s.what_would_change_my_mind !== "-") {
-    body += `🔄 Ubah pandangan jika: ${esc(s.what_would_change_my_mind)}\n`;
+  const whatChanges = toStr(s.what_would_change_my_mind);
+  if (whatChanges) {
+    body += `🔄 Ubah pandangan jika: ${esc(whatChanges)}\n`;
   }
 
   const supportLevels = s.key_levels?.nearest_support;
