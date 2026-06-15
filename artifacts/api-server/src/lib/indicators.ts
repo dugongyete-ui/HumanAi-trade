@@ -375,26 +375,55 @@ export interface TimeframeData {
   candle_count: number;
   current_price: number;
   ohlc_last: { open: number; high: number; low: number; close: number };
+  // Last 20 raw candles — AI can read price action directly
   ohlc_recent: Array<{ open: number; high: number; low: number; close: number; epoch: number }>;
   atr_percentile: number | null;
+
+  // ── EMA variants — AI selects which is most relevant ──
+  ema_8: number | null;
+  ema_13: number | null;
   ema_20: number | null;
+  ema_21: number | null;
+  ema_34: number | null;
   ema_50: number | null;
+  ema_89: number | null;
+  ema_100: number | null;
   ema_200: number | null;
+
+  // ── RSI variants ──
+  rsi_7: number | null;
+  rsi_9: number | null;
   rsi_14: number | null;
-  rsi_condition: string;
-  macd: MACDResult | null;
+  rsi_21: number | null;
+  rsi_condition: string;    // based on rsi_14
+
+  // ── MACD variants ──
+  macd: MACDResult | null;             // standard: 12,26,9
+  macd_fast: MACDResult | null;        // fast: 5,13,4 (more responsive)
   macd_signal: string;
-  bollinger: BollingerBand | null;
+
+  // ── Bollinger Bands variants ──
+  bollinger: BollingerBand | null;     // 20 period, 2σ (standard)
+  bollinger_tight: BollingerBand | null; // 20 period, 1σ (inner band)
   bb_position: string;
+
+  // ── ATR variants ──
+  atr_7: number | null;
   atr_14: number | null;
+  atr_21: number | null;
+
+  // ── Other oscillators ──
   stochastic: StochasticResult | null;
+  stoch_fast: StochasticResult | null; // fast stochastic: 5,3,3
   stoch_condition: string;
   ichimoku: IchimokuResult | null;
   fibonacci: FibonacciLevels | null;
   williams_r: number | null;
   williams_r_condition: string;
+  cci_14: number | null;               // short period for faster signals
   cci_20: number | null;
   cci_condition: string;
+
   trend: string;
   patterns: CandlePattern[];
   support_levels: number[];
@@ -409,16 +438,17 @@ export function buildTimeframeData(label: string, candles: Candle[]): TimeframeD
     ohlc_last: { open: 0, high: 0, low: 0, close: 0 },
     ohlc_recent: [],
     atr_percentile: null,
-    ema_20: null, ema_50: null, ema_200: null,
-    rsi_14: null, rsi_condition: "N/A",
-    macd: null, macd_signal: "N/A",
-    bollinger: null, bb_position: "N/A",
-    atr_14: null,
-    stochastic: null, stoch_condition: "N/A",
+    ema_8: null, ema_13: null, ema_20: null, ema_21: null, ema_34: null,
+    ema_50: null, ema_89: null, ema_100: null, ema_200: null,
+    rsi_7: null, rsi_9: null, rsi_14: null, rsi_21: null, rsi_condition: "N/A",
+    macd: null, macd_fast: null, macd_signal: "N/A",
+    bollinger: null, bollinger_tight: null, bb_position: "N/A",
+    atr_7: null, atr_14: null, atr_21: null,
+    stochastic: null, stoch_fast: null, stoch_condition: "N/A",
     ichimoku: null,
     fibonacci: null,
     williams_r: null, williams_r_condition: "N/A",
-    cci_20: null, cci_condition: "N/A",
+    cci_14: null, cci_20: null, cci_condition: "N/A",
     trend: "N/A",
     patterns: [],
     support_levels: [],
@@ -430,36 +460,68 @@ export function buildTimeframeData(label: string, candles: Candle[]): TimeframeD
   const closes = candles.map((c) => c.close);
   const last = candles[candles.length - 1];
 
-  const emaValues20 = ema(closes, 20);
-  const emaValues50 = ema(closes, 50);
-  const emaValues200 = ema(closes, 200);
-  const rsiValues = rsi(closes, 14);
-  const macdValues = macd(closes);
-  const bbValues = bollingerBands(closes, 20, 2);
-  const atrValues = atr(candles, 14);
-  const stochValues = stochastic(candles, 14, 3, 3);
+  // ── EMA variants ──
+  const emaV8   = ema(closes, 8);
+  const emaV13  = ema(closes, 13);
+  const emaV20  = ema(closes, 20);
+  const emaV21  = ema(closes, 21);
+  const emaV34  = ema(closes, 34);
+  const emaV50  = ema(closes, 50);
+  const emaV89  = ema(closes, 89);
+  const emaV100 = ema(closes, 100);
+  const emaV200 = ema(closes, 200);
+
+  // ── RSI variants ──
+  const rsiV7  = rsi(closes, 7);
+  const rsiV9  = rsi(closes, 9);
+  const rsiV14 = rsi(closes, 14);
+  const rsiV21 = rsi(closes, 21);
+
+  // ── MACD variants ──
+  const macdStd  = macd(closes, 12, 26, 9);   // standard
+  const macdFast = macd(closes, 5, 13, 4);    // fast / scalp
+
+  // ── Bollinger Bands variants ──
+  const bbStd   = bollingerBands(closes, 20, 2);   // standard outer bands
+  const bbTight = bollingerBands(closes, 20, 1);   // tight inner bands
+
+  // ── ATR variants ──
+  const atrV7  = atr(candles, 7);
+  const atrV14 = atr(candles, 14);
+  const atrV21 = atr(candles, 21);
+
+  // ── Stochastic variants ──
+  const stochStd  = stochastic(candles, 14, 3, 3);  // standard
+  const stochFast = stochastic(candles, 5, 3, 3);   // fast
+
+  // ── Other indicators ──
   const ichimokuResult = ichimoku(candles);
   const fibResult = fibonacciRetracement(candles);
   const wrValues = williamsR(candles, 14);
-  const cciValues = cci(candles, 20);
+  const cciV14 = cci(candles, 14);
+  const cciV20 = cci(candles, 20);
   const structure = analyzeStructure(candles);
   const patterns = detectPatterns(candles);
 
-  const lastRsi = rsiValues.at(-1) ?? null;
-  const lastMacd = macdValues.at(-1) ?? null;
-  const lastBb = bbValues.at(-1) ?? null;
-  const lastStoch = stochValues.at(-1) ?? null;
-  const lastWr = wrValues.at(-1) ?? null;
-  const lastCci = cciValues.at(-1) ?? null;
+  // ── Last values ──
+  const lastRsi14  = rsiV14.at(-1) ?? null;
+  const lastMacd   = macdStd.at(-1) ?? null;
+  const lastMacdF  = macdFast.at(-1) ?? null;
+  const lastBb     = bbStd.at(-1) ?? null;
+  const lastBbT    = bbTight.at(-1) ?? null;
+  const lastStoch  = stochStd.at(-1) ?? null;
+  const lastStochF = stochFast.at(-1) ?? null;
+  const lastWr     = wrValues.at(-1) ?? null;
+  const lastCci14  = cciV14.at(-1) ?? null;
+  const lastCci20  = cciV20.at(-1) ?? null;
 
-  const rsiCondition = lastRsi
-    ? lastRsi > 70 ? "Overbought" : lastRsi < 30 ? "Oversold" : "Neutral"
+  // ── Conditions (descriptive labels for fast reading) ──
+  const rsiCondition = lastRsi14
+    ? lastRsi14 > 70 ? "Overbought" : lastRsi14 < 30 ? "Oversold" : "Neutral"
     : "N/A";
 
   const macdSignal = lastMacd
-    ? lastMacd.histogram > 0
-      ? "Bullish (histogram positive)"
-      : "Bearish (histogram negative)"
+    ? lastMacd.histogram > 0 ? "Bullish (histogram positive)" : "Bearish (histogram negative)"
     : "N/A";
 
   let bbPosition = "N/A";
@@ -478,8 +540,8 @@ export function buildTimeframeData(label: string, candles: Candle[]): TimeframeD
     ? lastWr <= -80 ? "Oversold" : lastWr >= -20 ? "Overbought" : "Neutral"
     : "N/A";
 
-  const cciCondition = lastCci !== null
-    ? lastCci > 100 ? "Overbought" : lastCci < -100 ? "Oversold" : "Neutral"
+  const cciCondition = lastCci20 !== null
+    ? lastCci20 > 100 ? "Overbought" : lastCci20 < -100 ? "Oversold" : "Neutral"
     : "N/A";
 
   return {
@@ -487,31 +549,54 @@ export function buildTimeframeData(label: string, candles: Candle[]): TimeframeD
     candle_count: candles.length,
     current_price: last.close,
     ohlc_last: { open: last.open, high: last.high, low: last.low, close: last.close },
-    ohlc_recent: candles.slice(-3).map((c) => ({ open: c.open, high: c.high, low: c.low, close: c.close, epoch: c.epoch })),
+    // Last 20 raw candles for AI to read price action directly
+    ohlc_recent: candles.slice(-20).map((c) => ({ open: c.open, high: c.high, low: c.low, close: c.close, epoch: c.epoch })),
     atr_percentile: (() => {
-      if (atrValues.length < 20) return null;
-      const recent = atrValues.slice(-20);
+      if (atrV14.length < 20) return null;
+      const recent = atrV14.slice(-20);
       const mean = recent.reduce((a, b) => a + b, 0) / 20;
-      const cur = atrValues.at(-1)!;
+      const cur = atrV14.at(-1)!;
       return mean > 0 ? parseFloat(((cur / mean) * 100).toFixed(1)) : null;
     })(),
-    ema_20: emaValues20.at(-1) ?? null,
-    ema_50: emaValues50.at(-1) ?? null,
-    ema_200: emaValues200.at(-1) ?? null,
-    rsi_14: lastRsi,
+    // EMA variants
+    ema_8:   emaV8.at(-1)   ?? null,
+    ema_13:  emaV13.at(-1)  ?? null,
+    ema_20:  emaV20.at(-1)  ?? null,
+    ema_21:  emaV21.at(-1)  ?? null,
+    ema_34:  emaV34.at(-1)  ?? null,
+    ema_50:  emaV50.at(-1)  ?? null,
+    ema_89:  emaV89.at(-1)  ?? null,
+    ema_100: emaV100.at(-1) ?? null,
+    ema_200: emaV200.at(-1) ?? null,
+    // RSI variants
+    rsi_7:  rsiV7.at(-1)  ?? null,
+    rsi_9:  rsiV9.at(-1)  ?? null,
+    rsi_14: lastRsi14,
+    rsi_21: rsiV21.at(-1) ?? null,
     rsi_condition: rsiCondition,
-    macd: lastMacd,
+    // MACD variants
+    macd:      lastMacd,
+    macd_fast: lastMacdF,
     macd_signal: macdSignal,
-    bollinger: lastBb,
+    // Bollinger Bands variants
+    bollinger:       lastBb,
+    bollinger_tight: lastBbT,
     bb_position: bbPosition,
-    atr_14: atrValues.at(-1) ?? null,
+    // ATR variants
+    atr_7:  atrV7.at(-1)  ?? null,
+    atr_14: atrV14.at(-1) ?? null,
+    atr_21: atrV21.at(-1) ?? null,
+    // Stochastic variants
     stochastic: lastStoch,
+    stoch_fast: lastStochF,
     stoch_condition: stochCondition,
+    // Others
     ichimoku: ichimokuResult,
     fibonacci: fibResult,
     williams_r: lastWr,
     williams_r_condition: wrCondition,
-    cci_20: lastCci,
+    cci_14: lastCci14,
+    cci_20: lastCci20,
     cci_condition: cciCondition,
     trend: structure.trend,
     patterns,

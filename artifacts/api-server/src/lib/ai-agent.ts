@@ -109,22 +109,32 @@ Lakukan proses berpikir berjenjang ini secara internal sebelum menjawab. Hasilny
 
 ## 5. INTERPRETASI INDIKATOR
 
-Gunakan semua indikator sebagai **bukti yang mendukung narasi**, bukan perintah berdiri sendiri:
+Anda menerima **banyak varian indikator** — bukan satu set tetap. Tugas Anda adalah **memilih kombinasi yang paling relevan** untuk kondisi pasar saat ini, lalu sebutkan dalam field "reasoning" mengapa Anda memilih varian tersebut.
 
-| Indikator | Cara Baca |
-|---|---|
-| **EMA 20/50/200** | Tentukan tren dan dynamic support/resistance; perhatikan urutan bullish/bearish alignment |
-| **RSI (14)** | Ukur kelelahan momentum. Overbought/oversold BUKAN sinyal langsung — hanya relevan jika ada konfirmasi price action |
-| **MACD** | Konfirmasi perubahan momentum dan divergensi tersembunyi |
-| **Bollinger Bands** | Squeeze = energi terakumulasi; expansion = breakout sedang terjadi |
-| **ATR (14)** | Sesuaikan SL/TP berdasarkan volatilitas aktual, bukan nilai tetap |
-| **ATR Percentile** | ATR saat ini relatif rata-rata 20 periode: <80% = tenang/squeeze (potensi breakout); 80–120% = normal; >120% = volatilitas tinggi → dukung label VOLATILE/RANGING; >150% = sangat volatil, perlebar SL |
-| **Stochastic (14,3,3)** | Konfirmasi kondisi jenuh beli/jual pada timeframe rendah |
-| **Ichimoku Cloud** | Tenkan/Kijun cross = sinyal momentum; posisi harga vs cloud = filter bias tren; cloud bullish/bearish = konteks jangka menengah |
-| **Fibonacci Retracement** | Zona 38.2%–61.8% adalah golden zone untuk re-entry; perhatikan confluence Fibonacci + S/R struktur |
-| **Williams %R (14)** | Konfirmasi kondisi jenuh beli (≥ -20) atau jenuh jual (≤ -80); berguna bersama Stochastic |
-| **CCI (20)** | Nilai > +100 = overbought, < -100 = oversold; divergensi CCI dengan harga = sinyal reversal potensial |
-| **Support/Resistance** | Level tertinggi dalam hierarki keputusan — hormati level ini |
+**Prinsip pemilihan:**
+- Pasar trending kuat → EMA lebih penting dari oscillator
+- Pasar ranging → RSI/Stochastic/BB lebih relevan dari EMA
+- Volatilitas tinggi → ATR wajib jadi dasar SL/TP (pilih varian yang paling cocok dengan horizon trade)
+- Scalping/M5 → gunakan EMA cepat (8, 13, 21), MACD fast (5,13,4), Stochastic fast (5,3,3)
+- Swing/H4 → gunakan EMA lambat (50, 89, 200), MACD standar (12,26,9), RSI 21
+
+**Varian yang tersedia:**
+
+| Kelompok | Varian | Kapan Gunakan |
+|---|---|---|
+| **EMA** | 8, 13, 20, 21, 34, 50, 89, 100, 200 | Pilih 2–3 yang paling banyak diuji harga saat ini |
+| **RSI** | 7, 9, 14, 21 | RSI-7/9 untuk konfirmasi cepat; RSI-21 untuk filter tren |
+| **MACD** | Standar (12,26,9) dan Fast (5,13,4) | Fast untuk M5/M15; Standar untuk H1/H4 |
+| **Bollinger Bands** | 2σ (outer) dan 1σ (inner) | 2σ untuk extreme moves; 1σ untuk mean-reversion entry |
+| **ATR** | 7, 14, 21 | ATR-7 untuk scalp; ATR-14 default; ATR-21 untuk swing SL |
+| **Stochastic** | Standar (14,3,3) dan Fast (5,3,3) | Fast untuk M5 entry timing; Standar untuk konfirmasi |
+| **CCI** | 14 dan 20 | CCI-14 lebih sensitif; CCI-20 lebih smooth |
+| **Ichimoku** | Standard | Bias tren jangka menengah + S/R dinamis |
+| **Fibonacci** | 50-candle lookback | Golden zone 38.2%–61.8% untuk re-entry |
+| **Williams %R** | 14 | Bersama Stochastic untuk konfirmasi jenuh beli/jual |
+| **Support/Resistance** | Swing structure | Level tertinggi dalam hierarki — selalu hormati ini |
+| **ATR Percentile** | Relatif 20-periode | <80% squeeze; 80–120% normal; >120% volatil → perlebar SL |
+| **Raw OHLCV (20 candle)** | Harga mentah terakhir | Baca struktur price action, candle patterns, swing high/low langsung |
 
 ---
 
@@ -284,16 +294,28 @@ Ini adalah kondisi yang sangat jarang (< 1% kasus).
 
 ## 4. INTERPRETASI INDIKATOR
 
-| Indikator | Cara Baca |
-|---|---|
-| EMA 20/50/200 | Tren dan dynamic S/R |
-| RSI (14) | Kelelahan momentum — overbought/oversold bukan sinyal langsung |
-| MACD | Konfirmasi momentum dan divergensi |
-| Bollinger Bands | Squeeze = energi terakumulasi |
-| ATR (14) | Dasar penentuan SL/TP — jangan gunakan angka tetap |
-| Ichimoku | Bias tren dan support/resistance dinamis |
-| Fibonacci | Golden zone 38.2-61.8% untuk re-entry |
-| Support/Resistance | Level tertinggi dalam hierarki keputusan |
+Anda menerima **banyak varian indikator** — bukan satu set tetap. Pilih yang paling relevan untuk kondisi pasar saat ini dan sebutkan dalam field "reasoning" varian mana yang Anda andalkan dan mengapa.
+
+**Panduan pemilihan cepat:**
+- Pasar trending → EMA (50, 89, 200) lebih dominan dari oscillator
+- Pasar ranging → RSI/Stochastic/BB lebih relevan
+- Trade cepat (M5/M15) → EMA cepat (8,13,21), MACD fast, Stoch fast
+- Trade swing (H1/H4) → EMA lambat (50,89,200), MACD standar, RSI 21
+- SL/TP → selalu gunakan ATR yang cocok dengan horizon trade (ATR-7 scalp, ATR-14 default, ATR-21 swing)
+
+| Kelompok | Varian Tersedia | Kapan Relevan |
+|---|---|---|
+| **EMA** | 8, 13, 20, 21, 34, 50, 89, 100, 200 | Pilih 2–3 yang paling sering diuji harga |
+| **RSI** | 7, 9, 14, 21 | RSI-7/9 sinyal cepat; RSI-21 filter tren |
+| **MACD** | Fast (5,13,4) dan Standar (12,26,9) | Fast untuk TF rendah; Standar untuk H1/H4 |
+| **Bollinger Bands** | 2σ (outer) dan 1σ (inner) | 2σ extreme; 1σ mean-reversion entry |
+| **ATR** | 7, 14, 21 | Selalu jadi dasar SL — pilih sesuai horizon |
+| **Stochastic** | Fast (5,3,3) dan Standar (14,3,3) | Fast untuk timing entry; Standar konfirmasi |
+| **CCI** | 14 dan 20 | Sensitif vs smooth — pilih sesuai tempo |
+| **Ichimoku** | Standard | Bias tren menengah + S/R dinamis |
+| **Fibonacci** | 50-candle | Golden zone 38.2–61.8% re-entry |
+| **Williams %R** | 14 | Konfirmasi jenuh beli/jual |
+| **Raw OHLCV** | 20 candle terakhir | Baca price action, swing, pattern langsung |
 
 ---
 
@@ -891,24 +913,72 @@ function buildSensoryDataWithMeta(
       atr_percentile: tf.atr_percentile,
       trend: tf.trend,
       indicators: {
-        ema_20: tf.ema_20?.toFixed(2),
-        ema_50: tf.ema_50?.toFixed(2),
-        ema_200: tf.ema_200?.toFixed(2),
-        rsi_14: tf.rsi_14?.toFixed(2),
-        rsi_condition: tf.rsi_condition,
-        macd: tf.macd ? { line: tf.macd.macd.toFixed(4), signal: tf.macd.signal.toFixed(4), histogram: tf.macd.histogram.toFixed(4) } : null,
-        macd_signal: tf.macd_signal,
-        bollinger_bands: tf.bollinger ? { upper: tf.bollinger.upper.toFixed(2), middle: tf.bollinger.middle.toFixed(2), lower: tf.bollinger.lower.toFixed(2), bandwidth: tf.bollinger.bandwidth.toFixed(4) } : null,
-        bb_price_position: tf.bb_position,
-        atr_14: tf.atr_14?.toFixed(2),
-        stochastic: tf.stochastic ? { k: tf.stochastic.k.toFixed(2), d: tf.stochastic.d.toFixed(2) } : null,
-        stochastic_condition: tf.stoch_condition,
-        ichimoku: tf.ichimoku ? { tenkan: tf.ichimoku.tenkan?.toFixed(2), kijun: tf.ichimoku.kijun?.toFixed(2), senkou_a: tf.ichimoku.senkou_a?.toFixed(2), senkou_b: tf.ichimoku.senkou_b?.toFixed(2), cloud_color: tf.ichimoku.cloud_color, price_vs_cloud: tf.ichimoku.price_vs_cloud, tenkan_kijun_cross: tf.ichimoku.tenkan_kijun_cross } : null,
-        fibonacci: tf.fibonacci ? { swing_high: tf.fibonacci.swing_high.toFixed(2), swing_low: tf.fibonacci.swing_low.toFixed(2), trend: tf.fibonacci.trend, level_236: tf.fibonacci.level_236.toFixed(2), level_382: tf.fibonacci.level_382.toFixed(2), level_500: tf.fibonacci.level_500.toFixed(2), level_618: tf.fibonacci.level_618.toFixed(2), level_786: tf.fibonacci.level_786.toFixed(2), nearest_level: tf.fibonacci.nearest_level, price_zone: tf.fibonacci.price_zone } : null,
-        williams_r: tf.williams_r?.toFixed(2),
-        williams_r_condition: tf.williams_r_condition,
-        cci_20: tf.cci_20?.toFixed(2),
-        cci_condition: tf.cci_condition,
+        // ── EMA variants — AI chooses which periods are most relevant ──
+        ema: {
+          ema_8:   tf.ema_8?.toFixed(2)   ?? null,
+          ema_13:  tf.ema_13?.toFixed(2)  ?? null,
+          ema_20:  tf.ema_20?.toFixed(2)  ?? null,
+          ema_21:  tf.ema_21?.toFixed(2)  ?? null,
+          ema_34:  tf.ema_34?.toFixed(2)  ?? null,
+          ema_50:  tf.ema_50?.toFixed(2)  ?? null,
+          ema_89:  tf.ema_89?.toFixed(2)  ?? null,
+          ema_100: tf.ema_100?.toFixed(2) ?? null,
+          ema_200: tf.ema_200?.toFixed(2) ?? null,
+        },
+        // ── RSI variants — AI chooses period based on market tempo ──
+        rsi: {
+          rsi_7:  tf.rsi_7?.toFixed(2)  ?? null,
+          rsi_9:  tf.rsi_9?.toFixed(2)  ?? null,
+          rsi_14: tf.rsi_14?.toFixed(2) ?? null,
+          rsi_21: tf.rsi_21?.toFixed(2) ?? null,
+          condition_14: tf.rsi_condition,
+        },
+        // ── MACD variants ──
+        macd: {
+          standard_12_26_9: tf.macd
+            ? { line: tf.macd.macd.toFixed(4), signal: tf.macd.signal.toFixed(4), histogram: tf.macd.histogram.toFixed(4), bias: tf.macd_signal }
+            : null,
+          fast_5_13_4: tf.macd_fast
+            ? { line: tf.macd_fast.macd.toFixed(4), signal: tf.macd_fast.signal.toFixed(4), histogram: tf.macd_fast.histogram.toFixed(4) }
+            : null,
+        },
+        // ── Bollinger Bands variants ──
+        bollinger_bands: {
+          outer_2sigma: tf.bollinger
+            ? { upper: tf.bollinger.upper.toFixed(2), middle: tf.bollinger.middle.toFixed(2), lower: tf.bollinger.lower.toFixed(2), bandwidth: tf.bollinger.bandwidth.toFixed(4), price_position: tf.bb_position }
+            : null,
+          inner_1sigma: tf.bollinger_tight
+            ? { upper: tf.bollinger_tight.upper.toFixed(2), lower: tf.bollinger_tight.lower.toFixed(2) }
+            : null,
+        },
+        // ── ATR variants — use the period that matches your trade horizon ──
+        atr: {
+          atr_7:  tf.atr_7?.toFixed(2)  ?? null,
+          atr_14: tf.atr_14?.toFixed(2) ?? null,
+          atr_21: tf.atr_21?.toFixed(2) ?? null,
+        },
+        // ── Stochastic variants ──
+        stochastic: {
+          standard_14: tf.stochastic
+            ? { k: tf.stochastic.k.toFixed(2), d: tf.stochastic.d.toFixed(2), condition: tf.stoch_condition }
+            : null,
+          fast_5: tf.stoch_fast
+            ? { k: tf.stoch_fast.k.toFixed(2), d: tf.stoch_fast.d.toFixed(2) }
+            : null,
+        },
+        // ── Other indicators ──
+        ichimoku: tf.ichimoku
+          ? { tenkan: tf.ichimoku.tenkan?.toFixed(2), kijun: tf.ichimoku.kijun?.toFixed(2), senkou_a: tf.ichimoku.senkou_a?.toFixed(2), senkou_b: tf.ichimoku.senkou_b?.toFixed(2), cloud_color: tf.ichimoku.cloud_color, price_vs_cloud: tf.ichimoku.price_vs_cloud, tenkan_kijun_cross: tf.ichimoku.tenkan_kijun_cross }
+          : null,
+        fibonacci: tf.fibonacci
+          ? { swing_high: tf.fibonacci.swing_high.toFixed(2), swing_low: tf.fibonacci.swing_low.toFixed(2), trend: tf.fibonacci.trend, level_236: tf.fibonacci.level_236.toFixed(2), level_382: tf.fibonacci.level_382.toFixed(2), level_500: tf.fibonacci.level_500.toFixed(2), level_618: tf.fibonacci.level_618.toFixed(2), level_786: tf.fibonacci.level_786.toFixed(2), nearest_level: tf.fibonacci.nearest_level, price_zone: tf.fibonacci.price_zone }
+          : null,
+        williams_r: { value: tf.williams_r?.toFixed(2) ?? null, condition: tf.williams_r_condition },
+        cci: {
+          cci_14: tf.cci_14?.toFixed(2) ?? null,
+          cci_20: tf.cci_20?.toFixed(2) ?? null,
+          condition: tf.cci_condition,
+        },
       },
       price_action: {
         candlestick_patterns: tf.patterns.map((p) => `${p.name} (${p.type})`),
