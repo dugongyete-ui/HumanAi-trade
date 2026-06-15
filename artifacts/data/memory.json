@@ -1,6 +1,27 @@
 {
   "memory": [
     {
+      "timestamp": "2026-06-15T07:25:44.241Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 14.25.10",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4317.04,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 4,
+      "market_context": "XAUUSD masih terjebak dalam fase VOLATILE di sesi London dengan spread melebar (0.67) dan harga ($4317.04) berkonsolidasi ketat tepat di zona Fibonacci D1 61.8% ($4310.32). Struktur H4 sideways dengan Ichimoku Cloud bearish namun MACD histogram positif menciptakan ambiguitas persisten. Konflik timeframe ekstrem: H1 bullish tapi overbought (Stoch 84, Williams %R -13), sementara M15 bearish dengan momentum melemah. USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan struktural ini.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Ketika harga berkemah tepat di level Fibonacci D1 61.8% selama lebih dari 35 siklus analisis tanpa resolusi, pasar sedang mengajarkan bahwa level teknikal penting bukan sekadar garis pantul melainkan 'zona negosiasi makro' — kesabaran menunggu hasil negosiasi ini (breakout/breakdown) adalah edge statistik tertinggi dibandingkan mencoba menebak pemenang negosiasi di tengah jalan, terutama ketika konflik timeframe (H1 bullish vs M15 bearish) berlangsung konsisten tanpa dominasi jelas.",
+      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4262.67) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4301.08 diikuti penembusan support H1 $4286.29 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
+      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support, ATAU pembentukan lower low valid di M15 di bawah $4301.08 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
+    },
+    {
       "timestamp": "2026-06-15T07:18:16.590Z",
       "timeWib": "Senin, 15 Juni 2026 pukul 14.17.42",
       "decision": "WAIT",
@@ -392,33 +413,14 @@
       "take_profit": null,
       "stop_loss": null,
       "lesson": "Ketika pasar menunjukkan overbought ekstrem di sesi Asia dengan spread melebar dan resistensi dinamis H4 belum tertembus, 'tidak melakukan apa-apa' adalah bentuk manajemen risiko terbaik — reli vertikal tanpa koreksi sehat di sesi likuiditas tipis seringkali merupakan jebakan bagi trader yang tidak sabar menunggu konfirmasi struktur."
-    },
-    {
-      "timestamp": "2026-06-15T01:00:36.889Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 08.00.05",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4291.21,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "BEARISH"
-      },
-      "confluence_score": 3,
-      "market_context": "XAUUSD berada dalam fase VOLATILE di sesi Asia dengan harga ($4291.21) terkoreksi dari high $4308.16 dan kini menguji support intraday $4291.89. Meskipun USD melemah (EURUSD naik), struktur H4 masih sideways dengan Ichimoku Cloud bearish dan EMA 50 H4 ($4303.06) bertindak sebagai resistensi dinamis yang belum tertembus secara valid. Indikator overbought ekstrem di H1 (CCI 270, RSI 74) dan M5 (RSI 74, Stoch 84) mengonfirmasi kelelahan momentum jangka pendek setelah reli tajam.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null,
-      "lesson": "Konsistensi 16 WAIT berturut-turut di kondisi volatil sesi Asia dengan overbought ekstrem dan resistensi H4 belum tertembus adalah bukti bahwa 'tidak trading' adalah strategi aktif — pasar yang bergerak vertikal tanpa koreksi sehat di likuiditas tipis adalah jebakan klasik bagi trader yang merasa 'harus masuk karena USD melemah', padahal struktur teknikal belum mengizinkan."
     }
   ],
   "sessionStats": {
     "wins": 0,
     "losses": 0,
     "totalSignals": 0,
-    "totalAnalyses": 35,
-    "waitCount": 35,
+    "totalAnalyses": 36,
+    "waitCount": 36,
     "lastMarketPhases": [
       "VOLATILE",
       "VOLATILE",
@@ -445,5 +447,5 @@
     },
     "phasePerformance": {}
   },
-  "savedAt": "2026-06-15T07:18:18.592Z"
+  "savedAt": "2026-06-15T07:25:46.241Z"
 }
