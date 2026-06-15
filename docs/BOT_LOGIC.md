@@ -1,4 +1,4 @@
-# BOT LOGIC — Atlas State Machine, Threshold, Indikator & On-Demand Chat
+# BOT LOGIC — Atlas State Machine, Threshold, Strategi & On-Demand Chat
 
 ## State Machine
 
@@ -9,8 +9,8 @@ Bot beroperasi dalam 2 mode yang berpindah otomatis:
 │                       ANALYZING MODE                            │
 │  Cron: */5 * * * * (setiap 5 menit)                            │
 │  Cek market buka → fetch 5 timeframe → hitung semua indikator  │
-│  → inject memori + kalender → kirim ke LLM                     │
-│  → AI pilih sendiri indikator & strategi sesuai kondisi        │
+│  → inject memori + kalender → kirim ke LLM (temp 0.65)        │
+│  → AI rancang strategi sendiri, pilih indikator sendiri        │
 │  → BUY/SELL lolos session threshold + R:R ≥ 1.5?              │
 │         YES ──────────────────────────────────────────────┐     │
 │         NO / WAIT → tetap ANALYZING                       │     │
@@ -34,52 +34,92 @@ Bot beroperasi dalam 2 mode yang berpindah otomatis:
 
 ---
 
-## Session-Aware Thresholds
+## Session-Aware Thresholds (Scheduler)
 
-Threshold tidak fix — berubah sesuai sesi trading aktif agar lebih adaptif:
+Threshold sinyal berbeda sesuai sesi trading:
 
 | Sesi | Jam UTC | Jam WIB | Confidence Min | Confluence Min |
 |---|---|---|---|---|
-| **Asia** | 22:00–07:59 | 05:00–14:59 | **0.58** | **4** |
-| **London/NY** | 08:00–11:59 / 16:00–21:59 | 15:00–04:59 | **0.55** | **4** |
-| **London+NY Overlap** | 12:00–15:59 | 19:00–22:59 | **0.53** | **4** |
+| **Asia** | 22:00–07:59 | 05:00–14:59 | **0.52** | **4** |
+| **London/NY** | 08:00–11:59 / 16:00–21:59 | 15:00–04:59 | **0.49** | **4** |
+| **London+NY Overlap** | 12:00–15:59 | 19:00–22:59 | **0.46** | **4** |
 
 R:R minimum **1.5** berlaku di semua sesi.
+
+> **Catatan**: AI sendiri hanya memutuskan WAIT jika confidence internal < 0.45. Jika AI beri 0.50 dan kita di sesi Overlap (threshold 0.46), sinyal **lolos**.
 
 **Cara mengubah**: edit `getSessionConfig()` di `scheduler.ts`.
 
 ---
 
-## Indikator Teknikal — AI Memilih Sendiri
+## Desain AI — Bebas Pilih Indikator, Bebas Rancang Strategi
 
-**File**: `artifacts/api-server/src/lib/indicators.ts`
+**File**: `artifacts/api-server/src/lib/ai-agent.ts`
 
-Semua varian dihitung dan dikirim ke AI. AI **tidak dipaksa** memakai satu set tetap — ia memilih kombinasi yang paling relevan sesuai kondisi pasar saat itu.
+AI **tidak dipaksa** memakai indikator tertentu atau strategi tertentu. Setiap siklus:
 
-| Indikator | Varian Tersedia | Kapan AI Memilih |
+1. AI menerima **semua varian semua indikator** sekaligus dari 5 timeframe
+2. AI **bebas memilih** kombinasi yang paling relevan untuk kondisi pasar saat itu
+3. AI **bebas merancang** strategi apapun yang cocok:
+
+| Strategi | Kondisi Ideal | Indikator Khas |
 |---|---|---|
-| **EMA** | 8, 13, 20, 21, 34, 50, 89, 100, 200 | Trending → EMA lambat (50/89/200); Scalp → EMA cepat (8/13/21) |
-| **RSI** | 7, 9, 14, 21 | RSI-7/9 konfirmasi cepat; RSI-21 filter tren |
-| **MACD** | Standar (12,26,9) + Fast (5,13,4) | Fast untuk M5/M15; Standar untuk H1/H4 |
-| **Bollinger Bands** | 2σ outer + 1σ inner | 2σ extreme moves; 1σ mean-reversion entry |
-| **ATR** | 7, 14, 21 | ATR-7 scalp; ATR-14 default; ATR-21 swing |
-| **Stochastic** | Standar (14,3,3) + Fast (5,3,3) | Fast M5 entry timing; Standar konfirmasi |
-| **CCI** | 14 + 20 | CCI-14 sensitif; CCI-20 smooth |
-| **Ichimoku** | Standard | Bias tren jangka menengah + S/R dinamis |
-| **Fibonacci** | 50-candle lookback | Golden zone 38.2%–61.8% re-entry |
-| **Williams %R** | 14 | Konfirmasi jenuh beli/jual bersama Stochastic |
-| **Support/Resistance** | Swing structure | Level kritis dari swing high/low |
-| **Candlestick Patterns** | Hammer, Doji, Engulfing, dll | Price action konfirmasi entry |
-| **ATR Percentile** | Relatif 20-periode | <80% squeeze; 80–120% normal; >120% volatil |
-| **Raw OHLCV** | 20 candle terakhir | AI membaca price action langsung |
+| **Trend-following** | Tren kuat D1/H4 | EMA stack, MACD, ADX-proxy via EMA slope |
+| **Breakout** | Konsolidasi ketat, ATR squeeze | BB tight, volume surge, break of structure |
+| **Range trading** | Ranging jelas di H1/M15 | RSI, Stoch, BB outer, S/R levels |
+| **Mean-reversion** | RSI/Stoch ekstrem + rejection candle | RSI 7/9, Williams %R, Stoch fast, BB 2σ |
+| **Momentum** | MACD crossover + EMA alignment | MACD fast, EMA 8/13, RSI 9 |
+| **Price action** | Struktur jelas, candle pattern kuat | Raw OHLCV, S/R, Fibonacci, Ichimoku |
 
-AI **wajib menyebutkan** dalam field `reasoning` varian mana yang dipilih dan mengapa.
+AI wajib menyebutkan di field `reasoning`: indikator apa yang dipilih dan mengapa kondisi pasar membuat ia memilihnya.
+
+**Semua varian yang tersedia:**
+
+| Kelompok | Varian |
+|---|---|
+| **EMA** | 8, 13, 20, 21, 34, 50, 89, 100, 200 |
+| **RSI** | 7, 9, 14, 21 |
+| **MACD** | Standar (12,26,9) · Fast (5,13,4) |
+| **Bollinger Bands** | 2σ outer · 1σ inner |
+| **ATR** | 7, 14, 21 + ATR Percentile |
+| **Stochastic** | Standar (14,3,3) · Fast (5,3,3) |
+| **CCI** | 14 · 20 |
+| **Ichimoku** | Standard |
+| **Fibonacci** | 50-candle lookback |
+| **Williams %R** | 14 |
+| **S/R** | Key swing levels |
+| **Patterns** | Hammer, Engulfing, Doji, dll |
+| **Raw OHLCV** | 20 candle terakhir |
+
+---
+
+## Kalibrasi Confidence AI
+
+| Range | Artinya | Decision AI |
+|---|---|---|
+| 0.75–1.00 | Mayoritas timeframe & indikator selaras kuat | **BUY/SELL** |
+| 0.55–0.74 | Bias jelas, konfluensi cukup, setup layak | **BUY/SELL** |
+| 0.45–0.54 | Ada arah + konfirmasi, kondisi kurang sempurna | **BUY/SELL** (SL ketat) |
+| < 0.45 | Benar-benar tidak ada struktur/arah | **WAIT** |
+
+**Panduan AI internal** (di prompt):
+- H4+H1 sama arah + 1 konfirmasi M15 → minimal 0.58
+- + konfluensi indikator → 0.65–0.72
+- + USD context + S/R alignment → 0.70–0.80
+
+---
+
+## WAIT Streak Guard
+
+AI membaca field `analysis_meta.wait_streak_consecutive` dari data yang dikirim ke prompt:
+- **wait_streak ≥ 3**: AI wajib re-evaluasi — mungkin ada setup yang terlewat
+- **wait_streak ≥ 6**: AI hampir pasti harus BUY/SELL kecuali pasar tutup
+
+Ini mencegah AI "terjebak" di mode defensif dan terus WAIT meski ada struktur yang bisa dibaca.
 
 ---
 
 ## On-Demand Analysis (`/chat` command)
-
-Selain analisis otomatis, user bisa minta analisis langsung via Telegram `/chat <pertanyaan>`.
 
 ```
 User kirim /chat → analyzeMarketOnDemand() → CHAT_SYSTEM_PROMPT → AI
@@ -89,17 +129,15 @@ User kirim /chat → analyzeMarketOnDemand() → CHAT_SYSTEM_PROMPT → AI
                                 formatChatSignal() → kirim ke Telegram
 ```
 
-**Perbedaan penting dengan analisis otomatis:**
-
 | | **Auto (cron)** | **On-Demand (/chat)** |
 |---|---|---|
 | System prompt | `SYSTEM_PROMPT` | `CHAT_SYSTEM_PROMPT` (mentor mode) |
-| Boleh WAIT? | Ya (jika tidak ada struktur) | Hampir tidak pernah |
+| Boleh WAIT? | Hanya jika conf < 0.45 | Hampir tidak pernah |
 | Setup type | IMMEDIATE_ENTRY / NO_SETUP | IMMEDIATE_ENTRY / PENDING_SETUP |
+| IMMEDIATE_ENTRY threshold | conf ≥ 0.50, confluence ≥ 4 | sama |
 | Masuk MONITORING? | Ya (jika signal valid) | Tidak |
-| Tujuan | Trading otomatis | Panduan mentor untuk user |
 
-**Suppression window**: Jika user baru saja `/chat` (< 90 detik), scheduler skip pengiriman sinyal WAIT biasa ke Telegram untuk menghindari "noise" setelah chat analysis.
+**Suppression window**: Jika user baru saja `/chat` (< 90 detik), scheduler skip pengiriman WAIT biasa ke Telegram.
 
 ---
 
@@ -107,19 +145,19 @@ User kirim /chat → analyzeMarketOnDemand() → CHAT_SYSTEM_PROMPT → AI
 
 | Parameter | Nilai | Keterangan |
 |---|---|---|
-| Confidence minimum (Asia) | 0.58 | Session-aware threshold |
-| Confidence minimum (London/NY) | 0.55 | Session-aware threshold |
-| Confidence minimum (Overlap) | 0.53 | Sesi paling aktif — paling longgar |
-| Confluence minimum (semua sesi) | 4/10 | Di bawah ini → tidak kirim sinyal (auto mode) |
-| R:R minimum | 1.5 | Di bawah ini → tidak kirim sinyal (auto mode) |
-| Confidence WAIT (AI internal) | < 0.50 | AI tidak boleh BUY/SELL di bawah ini |
+| Confidence WAIT (AI internal) | < 0.45 | AI tidak boleh BUY/SELL di bawah ini |
+| Confidence min — Asia | 0.52 | Scheduler reject di bawah ini |
+| Confidence min — London/NY | 0.49 | Scheduler reject di bawah ini |
+| Confidence min — Overlap | 0.46 | Paling longgar — sesi paling aktif |
+| Confluence min (semua sesi) | 4/10 | Scheduler reject di bawah ini |
+| R:R minimum | 1.5 | Berlaku semua sesi |
+| AI temperature | 0.65 | Cukup kreatif, tidak terlalu deterministik |
 | Cron schedule | `*/5 * * * *` | Analisis setiap 5 menit |
 | Monitor interval | 10 detik | Cek TP/SL saat MONITORING |
 | TP1 milestone | 50% dari range entry→TP | Saat hit → SL pindah ke breakeven |
 | Chat suppression window | 90 detik | Skip WAIT broadcast setelah /chat |
-| Market cache TTL | 3 menit | Cache hasil `checkMarketOpen()` |
-| Calendar cache TTL | 4 jam | Cache ForexFactory feed (disk + memory) |
-| Memory max entries | 20 | Simpan 20 siklus terakhir (persist ke disk) |
+| Calendar cache TTL | 4 jam | ForexFactory (disk + memory) |
+| Memory max entries | 20 | Persist ke disk |
 
 ---
 
@@ -127,122 +165,67 @@ User kirim /chat → analyzeMarketOnDemand() → CHAT_SYSTEM_PROMPT → AI
 
 **File**: `artifacts/api-server/src/lib/ai-agent.ts`, `persistent-memory.ts`
 
-Setiap siklus analisis, AI **bukan** mulai dari nol. AI menerima konteks:
+Setiap siklus analisis, AI menerima konteks lengkap:
 
-### 1. Statistik Sesi (dengan Metacognition)
+### 1. Long-Term Memory (AI-Managed)
+Catatan permanen yang AI tulis sendiri lintas sesi. Max 10 catatan.
+File: `data/long_term_notes.json`
+
+### 2. Statistik Sesi + Metacognition
 ```
 Total analisis: 47 | BUY/SELL: 8 | WAIT: 39
 Hasil: 5 WIN / 2 LOSS → Win Rate: 71%
 Confidence bands: High (≥0.80): 3W/0L | Medium (0.60–0.79): 2W/2L
 Fase 5 siklus: RANGING → RANGING → TRENDING_UP → TRENDING_UP → TRENDING_UP
-Bias H4 dominan: NEUTRAL (3 siklus berturut-turut)
+wait_streak_consecutive: 6 ← AI akan re-evaluasi karena ini
 ```
 
-### 2. Riwayat 10 Siklus Terakhir
-```
-1. [08:45 WIB] BUY | $3345.20 | conf:72% | TRENDING_UP | bias H4:BULLISH
-   Entry:$3343.00 TP:$3358.00 SL:$3336.00
-   → ✅ WIN (exit $3358.20)
-2. [08:30 WIB] WAIT | $3341.80 | conf:44% | CONSOLIDATION
-   "Pasar konsolidasi, menunggu breakout..."
-```
-
-### 3. Instruksi Refleksi Diri (5 pertanyaan)
-1. Apakah kondisi berubah dari siklus sebelumnya?
-2. Jika ada sinyal aktif — harga sudah ke mana?
-3. Jika baru LOSS — apa yang keliru?
-4. Apakah bias H4 berubah konsisten (tanda tren nyata)?
-5. Jika ≥3 WAIT berturut-turut — ada setup yang terlewat?
-
-### 4. Long-Term Memory (AI-Managed)
-AI bisa menyimpan catatan permanen antar sesi via field `long_term_memory_ops` dalam JSON output-nya:
-- `ADD` — tambah insight baru (max 10 catatan)
-- `UPDATE` — perbarui catatan yang ada (by ID)
-- `DELETE` — hapus catatan yang sudah tidak relevan
-
-**File**: `artifacts/api-server/src/lib/long-term-memory.ts`
-**Disk**: `data/long_term_notes.json`
+### 3. Riwayat 10 Siklus + Refleksi Diri
+AI melihat riwayat keputusan terakhir dan menjawab 5 pertanyaan refleksi.
 
 ---
 
-## Economic Calendar (News Awareness)
+## Economic Calendar
 
-**File**: `artifacts/api-server/src/lib/news-calendar.ts`
-
-Source: ForexFactory public JSON — `https://nfs.faireconomy.media/ff_calendar_thisweek.json`
-
-3 Level Alert yang diinjek ke AI:
+Source: ForexFactory JSON feed, cache 4 jam
 
 | Alert | Kondisi | Instruksi ke AI |
 |---|---|---|
 | ✅ CLEAR | Tidak ada event High dalam 4 jam | Analisis normal |
-| ⚡ CAUTION | Ada event High dalam 4 jam | Naikkan kewaspadaan confluence |
-| 🚨 HIGH_ALERT | Event High dalam <1 jam | Sangat disarankan WAIT; SL 1.5–2x ATR |
-
-Event yang dianggap relevan untuk XAUUSD:
-- Semua event `impact: "High"` dari USD
-- Event High dari EUR, GBP, JPY, CHF (sentimen risk global)
-
-Cache: 4 jam (memory + disk). Rate-limit 429 backoff 15 menit.
+| ⚡ CAUTION | Ada event High dalam 4 jam | Naikkan kewaspadaan |
+| 🚨 HIGH_ALERT | Event High dalam <1 jam | Sangat disarankan WAIT atau SL lebih lebar |
 
 ---
 
-## Signal Validation (Dua Jenis)
+## TP1/TP2 + Trailing SL
 
-**File**: `artifacts/api-server/src/lib/ai-agent.ts`
+```
+Sinyal SELL: entry $4346.50, TP $4321.36, SL $4355.00
+  TP1 = entry - (entry - TP) × 50% = $4333.93
 
-### `validateSignal(signal, currentPrice)` — untuk IMMEDIATE_ENTRY
-Cek penuh: geometry SL/TP + proximity entry ke harga saat ini (±1.5%).
-Jika gagal proximity → di-salvage sebagai PENDING_SETUP, bukan dibuang.
+Harga turun ke $4333.93 (TP1 hit):
+  → Notifikasi "Sebagian target tercapai" ke Telegram
+  → SL pindah ke breakeven (= entry $4346.50)
+  
+Harga turun ke $4321.36 (TP2 hit): → WIN
+Atau harga naik ke $4346.50 (trailing SL = breakeven): → exit breakeven
+```
 
-### `validateSignalGeometry(signal)` — untuk PENDING_SETUP
-Hanya cek SL/TP geometry (sisi yang benar). Tidak cek proximity — entry boleh jauh dari harga saat ini.
+---
+
+## Signal Validation
+
+### `validateSignal()` — untuk IMMEDIATE_ENTRY
+Cek geometry SL/TP + proximity entry ke harga saat ini (±1.5%).
+Gagal proximity → di-salvage sebagai PENDING_SETUP, bukan dibuang.
+
+### `validateSignalGeometry()` — untuk PENDING_SETUP
+Hanya cek SL/TP geometry. Entry boleh jauh dari harga saat ini.
 
 ### Fallback Chain (On-Demand `/chat`)
 ```
-AI returns NO_SETUP / PENDING_SETUP dengan null prices
-        ↓
-Cek key_levels + timeframe_bias
-        ↓
-Ada bias + support/resistance? → Auto-build PENDING_SETUP
-  - BULLISH bias → BUY_LIMIT at nearest_support
-  - BEARISH bias → SELL_LIMIT at nearest_resistance
-        ↓
-Tidak ada data sama sekali? → WAIT (sangat jarang, < 1% kasus)
+AI returns PENDING_SETUP dengan null prices
+  → Cek key_levels + timeframe_bias
+  → Auto-build PENDING_SETUP dari S/R terdekat
+  → Hanya WAIT jika benar-benar tidak ada data sama sekali
 ```
-
----
-
-## TP1/TP2 + Trailing SL (MONITORING Mode)
-
-```
-Sinyal BUY: entry $3343, TP $3358, SL $3336
-  TP1 = entry + (TP - entry) × 50% = $3350.5
-  
-Harga naik ke $3350.5 (TP1 hit):
-  → Notifikasi "TP1 hit!" ke Telegram
-  → SL pindah ke breakeven (= entry $3343)
-  → Tunggu TP2 ($3358)
-  
-Harga naik ke $3358 (TP2 hit):
-  → WIN! Notifikasi ke Telegram
-  → Kembali ANALYZING
-  
-Atau harga turun ke $3343 (trailing SL = breakeven):
-  → Exit breakeven (tidak LOSS, tidak WIN — LOSS dihitung jika di bawah entry awal)
-```
-
----
-
-## Deriv WebSocket Client
-
-**File**: `artifacts/api-server/src/lib/deriv-client.ts`
-
-- Symbol: `frxXAUUSD`
-- Jadwal pasar: **Senin–Jumat**
-  - Buka: 00:00 UTC (07:00 WIB)
-  - Tutup: Jumat ~20:55 UTC (~03:55 WIB Sabtu)
-- Market closed → `MarketClosedError` → bot skip siklus, retry menit berikutnya
-- Pre-check via `active_symbols` API sebelum fetch candle (hemat request)
-- USD Proxy: EURUSD H1 sebagai proxy kekuatan dolar (EMA8 sebagai trend filter)
-- Multiplexed single WebSocket connection — tidak buka koneksi baru per request

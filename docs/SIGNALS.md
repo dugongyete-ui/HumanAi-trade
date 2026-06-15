@@ -3,7 +3,7 @@
 ## Dua Jenis Sinyal
 
 ### 1. Auto Signal (dari cron setiap 5 menit)
-Dihasilkan oleh `analyzeMarket()` → lolos session-aware threshold → masuk MONITORING mode → monitor TP1/TP2/SL.
+Dihasilkan oleh `analyzeMarket()` → lolos session-aware threshold → masuk MONITORING mode → monitor TP1/TP2/trailingSL.
 
 ### 2. On-Demand Signal (dari `/chat`)
 Dihasilkan oleh `analyzeMarketOnDemand()` → tidak masuk MONITORING → hanya panduan.
@@ -14,8 +14,8 @@ Selalu berisi arah BUY atau SELL (mentor mode).
 ## Siklus Hidup Sinyal Auto
 
 ```
-AI memberi BUY/SELL
-→ lolos session threshold (confidence + confluence) + R:R ≥ 1.5
+AI beri BUY/SELL (confidence ≥ 0.45 per AI internal)
+→ Scheduler cek session threshold (confidence + confluence ≥ session min) + R:R ≥ 1.5
          ↓
 storeSignal() → Signal disimpan dengan status "active"
          ↓
@@ -25,34 +25,30 @@ Bot masuk MONITORING mode
 setInterval 10 detik → fetchCurrentTick() → cek TP1/TP2/trailingSL
          ↓
 TP1 hit (50% dari range):
-  → notifikasi "Sebagian target tercapai" ke Telegram
-  → SL pindah ke breakeven
-  → terus monitor TP2
+  → Notifikasi "Sebagian target tercapai" ke Telegram
+  → SL pindah ke breakeven (= entry price)
+  → Terus monitor TP2
          ↓
-TP2 hit → WIN:
-  updateSignalResult(id, "WIN", exitPrice)  ← update signal store
-  recordMemoryResult("WIN", exitPrice)      ← update AI memory
-  sendMessage(formatResult(...))            ← kirim WIN ke Telegram
-  state.mode = "ANALYZING"                 ← kembali analisis
-
-SL hit → LOSS:
-  updateSignalResult(id, "LOSS", exitPrice)
-  recordMemoryResult("LOSS", exitPrice)
-  sendMessage(formatResult(...))
-  state.mode = "ANALYZING"
+TP2 hit → WIN | trailingSL hit → LOSS
+  → updateSignalResult(id, result, exitPrice)
+  → recordMemoryResult(result, exitPrice)
+  → sendMessage(formatResult(...))
+  → state.mode = "ANALYZING"
 ```
 
 ---
 
-## Session-Aware Thresholds (Auto Mode)
+## Session-Aware Thresholds
 
 | Sesi | Jam WIB | Confidence Min | Confluence Min |
 |---|---|---|---|
-| Asia | 05:00–14:59 | 0.58 | 4 |
-| London/NY | 15:00–18:59 / 23:00–04:59 | 0.55 | 4 |
-| London+NY Overlap | 19:00–22:59 | 0.53 | 4 |
+| Asia | 05:00–14:59 | **0.52** | **4** |
+| London/NY | 15:00–18:59 / 23:00–04:59 | **0.49** | **4** |
+| London+NY Overlap | 19:00–22:59 | **0.46** | **4** |
 
 R:R minimum **1.5** berlaku di semua sesi.
+
+AI internal hanya WAIT jika confidence < **0.45**. Jika AI beri 0.47 di sesi Overlap (threshold 0.46) → sinyal lolos.
 
 ---
 
@@ -64,7 +60,7 @@ R:R minimum **1.5** berlaku di semua sesi.
 | `PENDING_SETUP` | Tunggu harga mencapai level tertentu | Boleh jauh dari harga saat ini | Tidak |
 | `NO_SETUP` | Tidak ada kondisi layak (sangat jarang) | null | Tidak |
 
-Untuk `/chat`, AI **selalu** mengembalikan `IMMEDIATE_ENTRY` atau `PENDING_SETUP` — `NO_SETUP` dengan decision `WAIT` hampir tidak pernah terjadi.
+Untuk `/chat`, AI **selalu** mengembalikan `IMMEDIATE_ENTRY` atau `PENDING_SETUP`.
 
 ---
 
@@ -78,12 +74,12 @@ interface AISignal {
   take_profit: number | null;
   stop_loss: number | null;
   risk_reward_ratio: number | null;
-  market_phase: string;            // "TRENDING_UP", "RANGING", dll
+  market_phase: string;
   timeframe_bias: { H4, H1, M15: "BULLISH"|"BEARISH"|"NEUTRAL" };
   confluence_score: number;        // 0-10
   key_levels: { nearest_resistance, nearest_support: number | null };
   market_context: string;
-  reasoning: string;               // termasuk indikator mana yang dipilih AI dan mengapa
+  reasoning: string;               // termasuk indikator yang dipilih AI + mengapa
   invalidation: string;
   bull_case: string | string[];    // bisa array dari AI
   bear_case: string | string[];
@@ -93,32 +89,16 @@ interface AISignal {
 }
 ```
 
-> **Catatan**: `bull_case`, `bear_case`, dan `what_would_change_my_mind` bisa berupa `string` atau `string[]` tergantung output AI. Formatters di `telegram.ts` menangani keduanya — array dijoins dengan " • ".
+> `bull_case`, `bear_case`, dan `what_would_change_my_mind` bisa `string | string[]`. Helper `toStr()` di `telegram.ts` menangani keduanya.
 
 ## Interface OnDemandSignal (untuk /chat)
-
-Extends AISignal dengan field tambahan:
 
 ```typescript
 interface OnDemandSignal extends AISignal {
   setup_type: "IMMEDIATE_ENTRY" | "PENDING_SETUP" | "NO_SETUP";
   pending_order_type: "BUY_LIMIT" | "SELL_LIMIT" | "BUY_STOP" | "SELL_STOP" | null;
-  pending_trigger: string | null;  // kondisi konfirmasi saat harga tiba di entry
-  strategy_label: string;          // satu kalimat ringkas strategi
-}
-```
-
-## Interface Signal (disimpan di signal-store)
-
-```typescript
-interface Signal extends AISignal {
-  id: string;                      // UUID
-  timestamp: string;               // ISO UTC
-  current_price: number;           // harga tick saat analisis
-  status: "active" | "tp_hit" | "sl_hit" | "wait";
-  exit_price?: number;             // harga saat TP/SL hit
-  exit_time?: string;              // ISO UTC
-  result?: "WIN" | "LOSS";
+  pending_trigger: string | null;
+  strategy_label: string;
 }
 ```
 
@@ -143,48 +123,15 @@ interface Signal extends AISignal {
 📐 Risk/Reward: 1:2.14
 🏔️ Resistance: $3.360,00  🏔️ Support: $3.330,00
 
-📋 Tren naik kuat dengan EMA-50/89 stack bullish di H4/H1.
+📋 Tren naik kuat.
 
 💬 Analisis Atlas:
-[reasoning lengkap dari AI — termasuk indikator yang dipilih]
+[reasoning — termasuk indikator yang dipilih AI]
 
 🐂 Bull: [bull_case]
 🐻 Bear: [bear_case]
 
-❌ Invalidasi: Harga tutup di bawah EMA-50 H1 ($3.338)
-
-⏰ 15 Jun 2026, 08:45 WIB
-```
-
----
-
-## Format Pesan Telegram — PENDING_SETUP (dari /chat)
-
-```
-⏳ ATLAS MENTOR — PENDING BUY | XAUUSD
-━━━━━━━━━━━━━━━━━━━━━━━━
-📌 BUY LIMIT — Tunggu Pullback
-🏷️ Swing Low Demand Zone — BUY LIMIT H1 target 3:1
-
-💹 Harga Saat Ini: $3.356,80
-📈 Fase Pasar: Konsolidasi
-
-🎯 Level Entry: $3.335,00
-📐 Risk/Reward: 1:3.20
-
-📋 Kondisi Entry:
-Tunggu harga pullback ke $3.335,00. Konfirmasi dengan bullish engulfing/pin bar di M15 sebelum eksekusi.
-
-💰 Jika entry tereksekusi:
-  🎯 Take Profit: $3.358,00
-  🛡️ Stop Loss:   $3.327,50
-
-💬 Analisis Atlas:
-[reasoning lengkap dari AI]
-
-⚠️ Invalidasi: [kondisi yang membatalkan setup]
-
-🧠 Insight: [lesson dari kondisi saat ini]
+❌ Invalidasi: [kondisi pembatal]
 
 ⏰ 15 Jun 2026, 08:45 WIB
 ```
@@ -196,13 +143,13 @@ Tunggu harga pullback ke $3.335,00. Konfirmasi dengan bullish engulfing/pin bar 
 ```
 🏆 ATLAS — PROFIT | TAKE PROFIT HIT ✅
 ━━━━━━━━━━━━━━━━━━━━━━━━
-📌 Sinyal: BUY XAUUSD
-💰 Entry: $3.343,00
-🎯 Exit: $3.358,20
-📊 P&L: +15.20 pips
-⏱️ Durasi: 23 menit
+📌 Sinyal: SELL XAUUSD
+💰 Entry: $4.346,50
+🎯 Exit: $4.321,36
+📊 P&L: +25.14 pips
+⏱️ Durasi: 18 menit
 
-⏰ 15 Jun 2026, 09:08 WIB
+⏰ 15 Jun 2026, 10:37 WIB
 
 ▶️ Atlas melanjutkan analisis otomatis setiap 5 menit...
 ```
@@ -214,13 +161,13 @@ Tunggu harga pullback ke $3.335,00. Konfirmasi dengan bullish engulfing/pin bar 
 ```
 💔 ATLAS — LOSS | STOP LOSS HIT ❌
 ━━━━━━━━━━━━━━━━━━━━━━━━
-📌 Sinyal: BUY XAUUSD
-💰 Entry: $3.343,00
-🛑 Exit: $3.335,80
-📊 P&L: -7.20 pips
-⏱️ Durasi: 11 menit
+📌 Sinyal: SELL XAUUSD
+💰 Entry: $4.346,50
+🛑 Exit: $4.355,00
+📊 P&L: -8.50 pips
+⏱️ Durasi: 6 menit
 
-⏰ 15 Jun 2026, 08:56 WIB
+⏰ 15 Jun 2026, 10:25 WIB
 
 ▶️ Atlas melanjutkan analisis otomatis setiap 5 menit...
 ```
@@ -230,110 +177,71 @@ Tunggu harga pullback ke $3.335,00. Konfirmasi dengan bullish engulfing/pin bar 
 ## Logika Trigger TP/SL
 
 ```typescript
-// TP1 = 50% dari range entry→TP (breakeven milestone)
-// TP2 = TP asli (final target)
-// trailingSL = awalnya SL asli, pindah ke entry saat TP1 hit
+// TP1 = 50% dari range entry→TP (milestone breakeven)
+// trailingSL = mulai dari SL asli, pindah ke entry saat TP1 hit
 
 // Untuk BUY:
-if (price >= tp1 && !tp1Hit) → TP1 hit → SL ke breakeven
+if (price >= tp1 && !tp1Hit) → SL ke breakeven, kirim notif TP1
 if (price >= tp2)            → WIN
-if (price <= trailingSL)     → LOSS (atau exit breakeven jika SL sudah pindah)
+if (price <= trailingSL)     → LOSS
 
 // Untuk SELL:
-if (price <= tp1 && !tp1Hit) → TP1 hit → SL ke breakeven
+if (price <= tp1 && !tp1Hit) → SL ke breakeven, kirim notif TP1
 if (price <= tp2)            → WIN
 if (price >= trailingSL)     → LOSS
 ```
 
-Cek dilakukan setiap **10 detik** menggunakan `fetchCurrentTick()` dari Deriv WebSocket.
-
----
-
-## API Endpoints Sinyal
-
-### GET /api/signals?limit=N
-Kembalikan N sinyal terakhir (max 100).
-
-```json
-[
-  {
-    "id": "uuid",
-    "decision": "BUY",
-    "confidence": 0.72,
-    "entry_price": 3343.00,
-    "take_profit": 3358.00,
-    "stop_loss": 3336.00,
-    "current_price": 3345.20,
-    "timestamp": "2026-06-15T01:45:22.000Z",
-    "status": "tp_hit",
-    "result": "WIN",
-    "exit_price": 3358.20,
-    "exit_time": "2026-06-15T02:08:14.000Z",
-    "market_phase": "TRENDING_UP",
-    "confluence_score": 7,
-    "reasoning": "...",
-    "invalidation": "..."
-  }
-]
-```
-
-### GET /api/bot/status
-Termasuk `activeSignal`, `winRate`, `mode`:
-
-```json
-{
-  "running": true,
-  "paused": false,
-  "mode": "MONITORING",
-  "lastAnalysis": "2026-06-15T01:45:22.000Z",
-  "totalSignals": 8,
-  "activeSignal": {
-    "decision": "BUY",
-    "entry_price": 3343.00,
-    "take_profit": 3358.00,
-    "stop_loss": 3336.00,
-    "timestamp": "2026-06-15T01:45:22.000Z"
-  },
-  "winRate": { "wins": 5, "losses": 2, "rate": 71 },
-  "nextAnalysisIn": null
-}
-```
-
----
-
-## Win Rate Calculation
-
-```typescript
-export function getWinRate(): { wins: number; losses: number; rate: number } {
-  const closed = signals.filter((s) => s.result);         // hanya yang sudah closed
-  const wins = closed.filter((s) => s.result === "WIN").length;
-  const losses = closed.filter((s) => s.result === "LOSS").length;
-  return {
-    wins,
-    losses,
-    rate: closed.length > 0 ? Math.round((wins / closed.length) * 100) : 0,
-  };
-}
-```
-
-Sinyal WAIT dan sinyal yang masih ACTIVE tidak dihitung dalam win rate.
+Cek setiap **10 detik** via `fetchCurrentTick()` dari Deriv WebSocket.
 
 ---
 
 ## Aturan Keras — Auto Mode (SYSTEM_PROMPT)
 
-- Jangan BUY/SELL jika confidence < **0.50** (AI internal rule)
-- Jangan BUY/SELL jika confluence_score < **4**
-- Jangan BUY/SELL jika R:R < **1.5**
-- WAIT hanya saat pasar benar-benar tanpa struktur — bukan karena kondisi kurang sempurna
-- TP/SL harus berdasarkan ATR dan level S/R, bukan angka bulat
-- Selalu sertakan `invalidation` (kondisi yang membatalkan analisis)
-- AI wajib sebutkan di `reasoning` indikator mana yang dipilih dan mengapa
+**BUY/SELL wajib diberikan selama:**
+- Ada arah yang dapat diidentifikasi dari minimal 2 timeframe
+- Ada level S/R logis untuk entry, TP, dan SL
+- R:R ≥ 1.5
+
+**WAIT hanya jika salah satu:**
+1. Pasar tutup (weekend/holiday)
+2. Data tidak tersedia
+3. Event HIGH_ALERT dalam < 15 menit DAN tidak ada setup jelas
+4. Semua timeframe (H4, H1, M15) benar-benar NEUTRAL tanpa arah — sangat jarang
+
+**Batas minimum (IMMEDIATE_ENTRY saja):**
+- confidence < 0.45 → WAIT
+- confluence_score < 4 → WAIT
+- R:R < 1.5 → WAIT
 
 ## Aturan Mentor — On-Demand Mode (CHAT_SYSTEM_PROMPT)
 
-- Selalu beri arah BUY atau SELL — tidak ada kondisi yang "benar-benar tanpa pandangan"
-- Gunakan `PENDING_SETUP` jika kondisi belum ideal sekarang — entry boleh jauh dari harga saat ini
-- `NO_SETUP` dengan decision `WAIT` hanya boleh jika pasar tutup atau benar-benar tidak ada struktur sama sekali
-- Confidence dan confluence boleh rendah untuk PENDING_SETUP — mengukur keyakinan pada level, bukan entry sekarang
-- entry_price, take_profit, stop_loss wajib diisi angka nyata — tidak boleh null
+- Selalu beri arah BUY atau SELL
+- Default ke `PENDING_SETUP` jika kondisi belum ideal
+- `NO_SETUP` hanya jika pasar tutup atau benar-benar tidak ada struktur
+- entry_price, take_profit, stop_loss wajib diisi — tidak boleh null
+
+---
+
+## API Endpoints
+
+### GET /api/signals?limit=N
+```json
+[{
+  "id": "7e8317ec-d019-4529-837d-aa3d7d188c14",
+  "decision": "SELL",
+  "confidence": 0.62,
+  "entry_price": 4346.50,
+  "take_profit": 4321.36,
+  "stop_loss": 4355.00,
+  "current_price": 4338.12,
+  "timestamp": "2026-06-15T10:18:38.000Z",
+  "status": "active",
+  "market_phase": "TRENDING_DOWN",
+  "confluence_score": 6,
+  "reasoning": "...",
+  "invalidation": "..."
+}]
+```
+
+### Win Rate
+Hanya sinyal yang sudah closed (tp_hit / sl_hit) yang dihitung. WAIT dan ACTIVE tidak masuk.
