@@ -1,6 +1,258 @@
 {
   "memory": [
     {
+      "timestamp": "2026-06-15T10:12:00.237Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 17.11.26",
+      "decision": "WAIT",
+      "confidence": 0.42,
+      "price": 4337.2,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE ekstrem (ATR percentile >99% H4, >111% D1) dengan spread melebar (0.68). Harga gagal mempertahankan breakout di atas $4345.25 dan kini terkoreksi kembali ke zona pivot kritis $4335.55-$4340. Konflik timeframe persisten: H1 bullish overbought vs M15 bearish rejection. USD netral tidak memberikan katalis tambahan.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Setelah 69 siklus WAIT berturut-turut di tengah volatilitas ekstrem, pasar mengajarkan bahwa pivot $4335.55-$4345.25 telah menjadi zona 'institutional testing ground' di mana setiap breakout dan rejection adalah mekanisme price discovery, bukan sinyal trading — kemampuan untuk tetap absen hingga salah satu sisi memenangkan pertarungan secara definitif adalah bentuk edge yang tidak terlihat di chart tapi terasa di equity curve.",
+      "invalidation": "Breakout valid H1 close di atas $4345.25 diikuti oleh retest sukses ke level tersebut sebagai support baru DAN penurunan RSI M15 ke zona netral (50-60) tanpa membuat lower low — kondisi ini akan mengubah status WAIT menjadi potensi BUY on pullback. Sebaliknya, jika harga gagal hold di atas $4335.55 dan membentuk bearish engulfing M15 yang menutup di bawah $4327.99, maka breakout ini adalah false break dan bias berubah BEARISH.",
+      "what_would_change_my_mind": "H1 close di atas $4345.25 dengan volume meningkat signifikan (>150% rata-rata 20 periode) DAN RSI M15 reset ke zona 45-55 tanpa breakdown struktur higher low — ini akan mengonfirmasi bahwa rejection sebelumnya hanyalah liquidity grab, bukan distribusi. Atau sebaliknya, M15 close di bawah $4327.99 dengan konfirmasi bearish engulfing H1 akan memvalidasi false breakout dan membuka peluang SELL dengan konfidensi ≥0.60."
+    },
+    {
+      "timestamp": "2026-06-15T10:10:41.174Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 17.10.02",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4338.11,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE ekstrem (ATR percentile >99% H4, >111% D1) dengan spread melebar (0.66). Harga gagal mempertahankan breakout di atas $4345.25 dan kini terkoreksi kembali ke zona pivot kritis $4335.55-$4340. Konflik timeframe persisten: H1 bullish overbought vs M15 bearish rejection. USD netral tidak memberikan katalis tambahan.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Setelah 68 siklus WAIT berturut-turut di tengah volatilitas ekstrem, pasar mengajarkan bahwa pivot $4335.55-$4345.25 telah menjadi zona 'institutional testing ground' di mana setiap breakout dan rejection adalah mekanisme price discovery, bukan sinyal trading — kemampuan untuk tetap absen hingga salah satu sisi memenangkan pertarungan secara definitif adalah bentuk edge yang tidak terlihat di chart tapi terasa di equity curve.",
+      "invalidation": "Breakout valid H1 close di atas $4345.25 diikuti oleh retest sukses ke level tersebut sebagai support baru DAN penurunan RSI M15 ke zona netral (50-60) tanpa membuat lower low — kondisi ini akan mengubah status WAIT menjadi potensi BUY on pullback. Sebaliknya, jika harga gagal hold di atas $4335.55 dan membentuk bearish engulfing M15 yang menutup di bawah $4327.99, maka breakout ini adalah false break dan bias berubah BEARISH.",
+      "what_would_change_my_mind": "H1 close di atas $4345.25 diikuti oleh minimal 2 candle M15 yang membentuk higher low di atas $4335.55 dengan RSI M15 reset ke zona 50-60 DAN MACD Fast M15 mempertahankan histogram positif — ini akan mengonfirmasi bahwa breakout didukung oleh partisipasi berkelanjutan. Atau sebaliknya, M15 close di bawah $4327.99 dengan volume meningkat akan mengonfirmasi false break dan membuka peluang SELL dengan konfidensi ≥0.60."
+    },
+    {
+      "timestamp": "2026-06-15T10:06:57.286Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 17.06.23",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4338.96,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE ekstrem (ATR percentile >99% H4, >111% D1) dengan spread melebar (0.65). Harga gagal mempertahankan breakout di atas $4345.25 dan kini terkoreksi kembali ke zona pivot kritis $4335.55-$4340. Konflik timeframe persisten: H1 bullish overbought vs M15 bearish rejection. USD netral tidak memberikan katalis tambahan.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Setelah 67 siklus WAIT berturut-turut di tengah volatilitas ekstrem, pasar mengajarkan bahwa pivot $4335.55-$4345.25 telah menjadi zona 'institutional testing ground' di mana setiap breakout dan rejection adalah mekanisme price discovery, bukan sinyal trading — kemampuan untuk tetap absen hingga salah satu sisi memenangkan pertarungan secara definitif adalah bentuk edge yang tidak terlihat di chart tapi terasa di equity curve.",
+      "invalidation": "Breakout valid H1 close di atas $4345.25 diikuti oleh retest sukses ke level tersebut sebagai support baru DAN penurunan RSI M15 ke zona netral (50-60) tanpa membuat lower low — kondisi ini akan mengubah status WAIT menjadi potensi BUY on pullback. Sebaliknya, jika harga gagal hold di atas $4335.55 dan membentuk bearish engulfing M15 yang menutup di bawah $4327.99, maka breakout ini adalah false break dan bias berubah BEARISH.",
+      "what_would_change_my_mind": "H1 close di atas $4345.25 diikuti oleh minimal 2 candle M15 yang membentuk higher low di atas $4335.55 dengan RSI M15 reset ke zona 50-60 DAN MACD Fast M15 mempertahankan histogram positif — ini akan mengonfirmasi bahwa breakout didukung oleh partisipasi berkelanjutan. Atau sebaliknya, M15 close di bawah $4327.99 dengan volume meningkat akan mengonfirmasi false break dan membuka peluang SELL dengan konfidensi ≥0.60."
+    },
+    {
+      "timestamp": "2026-06-15T10:00:43.275Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 17.00.04",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4336.74,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE ekstrem (ATR percentile >99% H4, >111% D1) dengan spread melebar (0.73). Harga gagal mempertahankan breakout di atas $4345.25 dan kini terkoreksi kembali ke zona pivot kritis $4335.55-$4340. Konflik timeframe persisten: H1 bullish overbought vs M15 bearish rejection. USD netral tidak memberikan katalis tambahan.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Setelah 66 siklus WAIT berturut-turut di tengah volatilitas ekstrem, pasar mengajarkan bahwa pivot $4335.55-$4345.25 telah menjadi zona 'institutional testing ground' di mana setiap breakout dan rejection adalah mekanisme price discovery, bukan sinyal trading — kemampuan untuk tetap absen hingga salah satu sisi memenangkan pertarungan secara definitif adalah bentuk edge yang tidak terlihat di chart tapi terasa di equity curve.",
+      "invalidation": "Breakout valid H1 close di atas $4345.25 diikuti oleh retest sukses ke level tersebut sebagai support baru DAN penurunan RSI M15 ke zona netral (50-60) tanpa membuat lower low — kondisi ini akan mengubah status WAIT menjadi potensi BUY on pullback. Sebaliknya, jika harga gagal hold di atas $4335.55 dan membentuk bearish engulfing M15 yang menutup di bawah $4327.99, maka breakout ini adalah false break dan bias berubah BEARISH.",
+      "what_would_change_my_mind": "H1 close di atas $4345.25 diikuti oleh minimal 2 candle M15 yang membentuk higher low di atas $4335.55 dengan RSI M15 reset ke zona 50-60 DAN MACD Fast M15 mempertahankan histogram positif — ini akan mengonfirmasi bahwa breakout didukung oleh partisipasi berkelanjutan. Atau sebaliknya, M15 close di bawah $4327.99 dengan volume meningkat akan mengonfirmasi false break dan membuka peluang SELL dengan konfidensi ≥0.60."
+    },
+    {
+      "timestamp": "2026-06-15T09:55:38.098Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 16.55.01",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4340,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE ekstrem (ATR percentile >93% M5-H4, >111% D1) dengan spread melebar (0.66). Harga gagal mempertahankan breakout di atas $4345.25 dan kini terkoreksi kembali ke zona pivot kritis $4335.55-$4340. Konflik timeframe persisten: H1 bullish overbought vs M15 bearish rejection. USD netral tidak memberikan katalis tambahan.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Setelah 65 siklus WAIT berturut-turut di tengah volatilitas ekstrem, pasar mengajarkan bahwa pivot $4335.55-$4345.25 telah menjadi zona 'institutional testing ground' di mana setiap breakout dan rejection adalah mekanisme price discovery, bukan sinyal trading — kemampuan untuk tetap absen hingga salah satu sisi memenangkan pertarungan secara definitif adalah bentuk edge yang tidak terlihat di chart tapi terasa di equity curve.",
+      "invalidation": "Breakout valid H1 close di atas $4345.25 diikuti oleh retest sukses ke level tersebut sebagai support baru DAN penurunan RSI M15 ke zona netral (50-60) tanpa membuat lower low — kondisi ini akan mengubah status WAIT menjadi potensi BUY on pullback. Sebaliknya, jika harga gagal hold di atas $4335.55 dan membentuk bearish engulfing M15 yang menutup di bawah $4327.99, maka breakout ini adalah false break dan bias berubah BEARISH.",
+      "what_would_change_my_mind": "H1 close di atas $4345.25 diikuti oleh minimal 2 candle M15 yang membentuk higher low di atas $4335.55 dengan RSI M15 reset ke zona 50-60 DAN MACD Fast M15 mempertahankan histogram positif — ini akan mengonfirmasi bahwa breakout didukung oleh partisipasi berkelanjutan. Atau sebaliknya, M15 close di bawah $4327.99 dengan volume meningkat akan mengonfirmasi false break dan membuka peluang SELL dengan konfidensi ≥0.60."
+    },
+    {
+      "timestamp": "2026-06-15T09:54:23.413Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 16.53.48",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4340.12,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE ekstrem (ATR percentile >93% M5-H4, >111% D1) dengan spread melebar (0.59). Harga gagal mempertahankan breakout di atas $4345.25 dan kini terkoreksi kembali ke zona pivot kritis $4335.55-$4340. Konflik timeframe persisten: H1 bullish overbought vs M15 bearish rejection. USD netral tidak memberikan katalis tambahan.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Setelah 64 siklus WAIT berturut-turut di tengah volatilitas ekstrem, pasar mengajarkan bahwa pivot $4335.55-$4345.25 telah menjadi zona 'institutional testing ground' di mana setiap breakout dan rejection adalah mekanisme price discovery, bukan sinyal trading — kemampuan untuk tetap absen hingga salah satu sisi memenangkan pertarungan secara definitif adalah bentuk edge yang tidak terlihat di chart tapi terasa di equity curve.",
+      "invalidation": "Breakout valid H1 close di atas $4345.25 diikuti oleh retest sukses ke level tersebut sebagai support baru DAN penurunan RSI M15 ke zona netral (50-60) tanpa membuat lower low — kondisi ini akan mengubah status WAIT menjadi potensi BUY on pullback. Sebaliknya, jika harga gagal hold di atas $4335.55 dan membentuk bearish engulfing M15 yang menutup di bawah $4327.99, maka breakout ini adalah false break dan bias berubah BEARISH.",
+      "what_would_change_my_mind": "H1 close di atas $4345.25 diikuti oleh minimal 2 candle M15 yang membentuk higher low di atas $4335.55 dengan RSI M15 reset ke zona 50-60 DAN MACD Fast M15 mempertahankan histogram positif — ini akan mengonfirmasi bahwa breakout didukung oleh partisipasi berkelanjutan. Atau sebaliknya, M15 close di bawah $4327.99 dengan volume meningkat akan mengonfirmasi false break dan membuka peluang SELL dengan konfidensi ≥0.60."
+    },
+    {
+      "timestamp": "2026-06-15T09:25:39.472Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 16.25.03",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4340.51,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE ekstrem (ATR percentile >93% M5-H4) dengan spread melebar (0.78). Harga gagal mempertahankan breakout di atas $4345.25 dan kini terkoreksi kembali ke zona pivot kritis $4335.55-$4340. Konflik timeframe persisten: H1 bullish overbought vs M15 bearish rejection. USD netral tidak memberikan katalis tambahan.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Setelah 63 siklus WAIT berturut-turut, pasar mengajarkan bahwa volatilitas ekstrem (ATR >94%) yang disertai spread melebar dan konflik timeframe yang tidak terselesaikan adalah zona 'no-trade' absolut — kemampuan untuk tetap absen dari pasar ketika harga bergerak liar di sekitar pivot kritis bukanlah kelemahan analitis, melainkan manifestasi tertinggi dari edge trader diskresioner yang memahami bahwa kelangsungan karir trading diukur dari berapa banyak modal yang berhasil diselamatkan di tengah badai, bukan berapa banyak sinyal yang dihasilkan.",
+      "invalidation": "Breakout valid H1 close di atas $4345.25 diikuti oleh retest sukses ke level tersebut sebagai support baru DAN penurunan RSI M15 ke zona netral (50-60) tanpa membuat lower low — kondisi ini akan mengubah status WAIT menjadi potensi BUY on pullback. Sebaliknya, jika harga gagal hold di atas $4335.55 dan membentuk bearish engulfing M15 yang menutup di bawah $4327.99, maka breakout ini adalah false break dan bias berubah BEARISH.",
+      "what_would_change_my_mind": "H1 close di atas $4345.25 diikuti oleh minimal 2 candle M15 yang membentuk higher low di atas $4335.55 dengan RSI M15 reset ke zona 50-60 DAN MACD Fast M15 mempertahankan histogram positif — ini akan mengonfirmasi bahwa breakout didukung oleh partisipasi berkelanjutan. Atau sebaliknya, M15 close di bawah $4327.99 dengan volume meningkat akan mengonfirmasi false break dan membuka peluang SELL dengan konfidensi ≥0.60."
+    },
+    {
+      "timestamp": "2026-06-15T09:20:43.170Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 16.20.02",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4339.58,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE ekstrem (ATR percentile >94% M5-H4) dengan spread melebar (0.76). Harga gagal mempertahankan breakout di atas $4345.25 dan kini terkoreksi kembali ke zona pivot kritis $4335.55-$4340. Konflik timeframe persisten: H1 bullish overbought vs M15 bearish rejection. USD netral tidak memberikan katalis tambahan.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Setelah 63 siklus WAIT berturut-turut, pasar mengajarkan bahwa volatilitas ekstrem (ATR >94%) yang disertai spread melebar dan konflik timeframe yang tidak terselesaikan adalah zona 'no-trade' absolut — kemampuan untuk tetap absen dari pasar ketika harga bergerak liar di sekitar pivot kritis bukanlah kelemahan analitis, melainkan manifestasi tertinggi dari edge trader diskresioner yang memahami bahwa kelangsungan karir trading diukur dari berapa banyak modal yang berhasil diselamatkan di tengah badai, bukan berapa banyak sinyal yang dihasilkan.",
+      "invalidation": "Breakout valid H1 close di atas $4345.25 diikuti oleh retest sukses ke level tersebut sebagai support baru DAN penurunan RSI M15 ke zona netral (50-60) tanpa membuat lower low — kondisi ini akan mengubah status WAIT menjadi potensi BUY on pullback. Sebaliknya, jika harga gagal hold di atas $4335.55 dan membentuk bearish engulfing M15 yang menutup di bawah $4327.99, maka breakout ini adalah false break dan bias berubah BEARISH.",
+      "what_would_change_my_mind": "H1 close di atas $4345.25 diikuti oleh minimal 2 candle M15 yang membentuk higher low di atas $4335.55 dengan RSI M15 reset ke zona 50-60 DAN MACD Fast M15 mempertahankan histogram positif — ini akan mengonfirmasi bahwa breakout didukung oleh partisipasi berkelanjutan. Atau sebaliknya, M15 close di bawah $4327.99 dengan volume meningkat akan mengonfirmasi false break dan membuka peluang SELL dengan konfidensi ≥0.60."
+    },
+    {
+      "timestamp": "2026-06-15T09:15:41.348Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 16.15.03",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4340.16,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE ekstrem (ATR percentile >93% M15-H4) dengan spread melebar (0.69). Harga gagal mempertahankan breakout di atas $4345.25 dan kini terkoreksi kembali ke zona pivot kritis $4335.55-$4340. Konflik timeframe persisten: H1 bullish overbought vs M15 bearish rejection. USD netral tidak memberikan katalis tambahan.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Setelah 62 siklus WAIT berturut-turut, pasar mengajarkan bahwa volatilitas ekstrem (ATR >93%) yang disertai spread melebar dan konflik timeframe yang tidak terselesaikan adalah zona 'no-trade' absolut — kemampuan untuk tetap absen dari pasar ketika harga bergerak liar di sekitar pivot kritis bukanlah kelemahan analitis, melainkan manifestasi tertinggi dari edge trader diskresioner yang memahami bahwa kelangsungan karir trading diukur dari berapa banyak modal yang berhasil diselamatkan di tengah badai, bukan berapa banyak sinyal yang dihasilkan.",
+      "invalidation": "Breakout valid H1 close di atas $4345.25 diikuti oleh retest sukses ke level tersebut sebagai support baru DAN penurunan RSI M15 ke zona netral (50-60) tanpa membuat lower low — kondisi ini akan mengubah status WAIT menjadi potensi BUY on pullback. Sebaliknya, jika harga gagal hold di atas $4335.55 dan membentuk bearish engulfing M15 yang menutup di bawah $4327.99, maka breakout ini adalah false break dan bias berubah BEARISH.",
+      "what_would_change_my_mind": "H1 close di atas $4345.25 diikuti oleh minimal 2 candle M15 yang membentuk higher low di atas $4335.55 dengan RSI M15 reset ke zona 50-60 DAN MACD Fast M15 mempertahankan histogram positif — ini akan mengonfirmasi bahwa breakout didukung oleh partisipasi berkelanjutan. Atau sebaliknya, M15 close di bawah $4327.99 dengan volume meningkat akan mengonfirmasi false break dan membuka peluang SELL dengan konfidensi ≥0.60."
+    },
+    {
+      "timestamp": "2026-06-15T09:10:36.118Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 16.10.01",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4340.25,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE ekstrem (ATR percentile >99% M15/H4) dengan spread melebar (0.81). Harga gagal mempertahankan breakout di atas $4345.25 dan kini terkoreksi kembali ke zona pivot $4335.55-$4340. Konflik timeframe persisten: H1 bullish overbought vs M15 bearish rejection. USD netral tidak memberikan katalis tambahan.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Setelah 61 siklus WAIT berturut-turut, pasar mengajarkan bahwa volatilitas ekstrem (ATR >99%) yang disertai spread melebar dan konflik timeframe yang tidak terselesaikan adalah zona 'no-trade' absolut — kemampuan untuk tetap absen dari pasar ketika harga bergerak liar di sekitar pivot kritis bukanlah kelemahan analitis, melainkan manifestasi tertinggi dari edge trader diskresioner yang memahami bahwa kelangsungan karir trading diukur dari berapa banyak modal yang berhasil diselamatkan di tengah badai, bukan berapa banyak sinyal yang dihasilkan.",
+      "invalidation": "Breakout valid H1 close di atas $4345.25 diikuti oleh retest sukses ke level tersebut sebagai support baru DAN penurunan RSI M15 ke zona netral (50-60) tanpa membuat lower low — kondisi ini akan mengubah status WAIT menjadi potensi BUY on pullback. Sebaliknya, jika harga gagal hold di atas $4335.55 dan membentuk bearish engulfing M15 yang menutup di bawah $4327.99, maka breakout ini adalah false break dan bias berubah BEARISH.",
+      "what_would_change_my_mind": "H1 close di atas $4345.25 diikuti oleh minimal 2 candle M15 yang membentuk higher low di atas $4335.55 dengan RSI M15 reset ke zona 50-60 DAN MACD Fast M15 mempertahankan histogram positif — ini akan mengonfirmasi bahwa breakout didukung oleh partisipasi berkelanjutan. Atau sebaliknya, M15 close di bawah $4327.99 dengan volume meningkat akan mengonfirmasi false break dan membuka peluang SELL dengan konfidensi ≥0.60."
+    },
+    {
+      "timestamp": "2026-06-15T09:05:41.932Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 16.05.02",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4341.37,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE ekstrem (ATR percentile >98% M15/H4) pasca-breakout impulsif menembus pivot $4335.55 menuju high sesi London $4345.25, namun kini terkoreksi kembali ke zona breakout dengan spread melebar (0.69). H1 bullish kuat tapi seluruh osilator overbought ekstrem, sementara M15 menunjukkan bearish rejection candle tepat di resistance. USD netral tidak memberikan katalis tambahan.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Setelah 60 siklus WAIT berturut-turut, pasar mengajarkan bahwa konsistensi dalam ketidakhadiran adalah bentuk edge tertinggi ketika volatilitas ekstrem (ATR >98%) bertemu dengan konflik timeframe yang tidak terselesaikan — kemampuan untuk tetap disiplin menunggu struktur post-breakout yang bersih, alih-alih tergoda masuk di zona 'breakout-rejection' dengan spread melebar, adalah pembeda fundamental antara trader yang bertahan puluhan tahun dan yang terbakar dalam hitungan minggu.",
+      "invalidation": "Breakout valid H1 close di atas $4345.25 diikuti oleh retest sukses ke level tersebut sebagai support baru DAN penurunan RSI M15 ke zona netral (50-60) tanpa membuat lower low — kondisi ini akan mengubah status WAIT menjadi potensi BUY on pullback. Sebaliknya, jika harga gagal hold di atas $4335.55 dan membentuk bearish engulfing M15 yang menutup di bawah $4327.99, maka breakout ini adalah false break dan bias berubah BEARISH.",
+      "what_would_change_my_mind": "H1 close di atas $4345.25 diikuti oleh minimal 2 candle M15 yang membentuk higher low di atas $4335.55 dengan RSI M15 reset ke zona 50-60 DAN MACD Fast M15 mempertahankan histogram positif — ini akan mengonfirmasi bahwa breakout didukung oleh partisipasi berkelanjutan, bukan sekadar liquidity grab. Atau sebaliknya, M15 close di bawah $4327.99 dengan volume meningkat akan mengonfirmasi false break dan membuka peluang SELL dengan konfidensi ≥0.60."
+    },
+    {
+      "timestamp": "2026-06-15T09:01:10.690Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 16.00.04",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4334.6,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "BEARISH"
+      },
+      "confluence_score": 3,
+      "market_context": "XAUUSD berada dalam fase VOLATILE ekstrem (ATR percentile >93% di M15/H4) pasca-breakout impulsif menembus pivot $4335.55 menuju high sesi London $4345.25, namun kini terkoreksi kembali ke zona breakout dengan spread melebar (0.72). H1 bullish kuat tapi seluruh osilator overbought ekstrem, sementara M15 menunjukkan bearish rejection candle tepat di resistance. USD netral tidak memberikan katalis tambahan.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null,
+      "lesson": "Setelah 59 siklus WAIT berturut-turut, pasar mengajarkan bahwa konsistensi dalam ketidakhadiran adalah bentuk edge tertinggi ketika volatilitas ekstrem (ATR >93%) bertemu dengan konflik timeframe yang tidak terselesaikan — kemampuan untuk tetap disiplin menunggu struktur post-breakout yang bersih, alih-alih tergoda masuk di zona 'breakout-rejection' dengan spread melebar, adalah pembeda fundamental antara trader yang bertahan puluhan tahun dan yang terbakar dalam hitungan minggu.",
+      "invalidation": "Breakout valid H1 close di atas $4345.25 diikuti oleh retest sukses ke level tersebut sebagai support baru DAN penurunan RSI M15 ke zona netral (50-60) tanpa membuat lower low — kondisi ini akan mengubah status WAIT menjadi potensi BUY on pullback. Sebaliknya, jika harga gagal hold di atas $4327.99 dan membentuk bearish engulfing M15 yang menutup di bawah $4321.36, maka breakout ini adalah false break dan bias berubah BEARISH.",
+      "what_would_change_my_mind": "H1 close di atas $4345.25 diikuti oleh minimal 2 candle M15 yang membentuk higher low di atas $4335.55 dengan RSI M15 reset ke zona 50-60 DAN MACD Fast M15 mempertahankan histogram positif — ini akan mengonfirmasi bahwa breakout didukung oleh partisipasi berkelanjutan, bukan sekadar liquidity grab. Atau sebaliknya, M15 close di bawah $4327.99 dengan volume meningkat akan mengonfirmasi false break dan membuka peluang SELL dengan konfidensi ≥0.60."
+    },
+    {
       "timestamp": "2026-06-15T08:55:38.445Z",
       "timeWib": "Senin, 15 Juni 2026 pukul 15.55.03",
       "decision": "WAIT",
@@ -167,266 +419,14 @@
       "lesson": "Memasuki siklus ke-51 WAIT berturut-turut di zona Fibonacci D1 61.8% mengajarkan bahwa ketahanan psikologis trader diuji bukan oleh kerugian, melainkan oleh godaan untuk 'mengakhiri penderitaan menunggu' dengan memaksakan entry di zona abu-abu; edge sejati dalam kondisi volatil tanpa resolusi struktural adalah kemampuan untuk menerima bahwa pasar tidak berhutang kejelasan kepada kita, dan bahwa setiap menit yang dihabiskan di luar pasar saat kondisi tidak ideal adalah investasi dalam kelangsungan karir trading jangka panjang.",
       "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4269.51) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4310.32 diikuti penembusan support H1 $4301.08 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
       "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support EMA 20 H1 ($4269.51), ATAU pembentukan lower low valid di M15 di bawah $4310.32 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
-    },
-    {
-      "timestamp": "2026-06-15T08:15:36.722Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 15.15.02",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4328.95,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "BEARISH"
-      },
-      "confluence_score": 4,
-      "market_context": "XAUUSD berada dalam fase VOLATILE di sesi London dengan spread melebar (0.74) dan harga ($4329.04) menguji zona Fibonacci D1 61.8% ($4310.32) dari atas setelah rebound intraday. Struktur H4 menunjukkan momentum bullish (MACD histogram positif, Bullish Engulfing) namun tertahan oleh Ichimoku Cloud bearish dan posisi harga yang sangat dekat dengan resistance mayor $4335.55. Konflik timeframe ekstrem persisten: H1 bullish tapi jenuh beli (RSI 73, Stoch 89), sementara M15 bearish dengan MACD histogram negatif dan Tenkan/Kijun bearish cross. USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan struktural ini.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null,
-      "lesson": "Memasuki siklus ke-50 WAIT berturut-turut di zona Fibonacci D1 61.8% mengajarkan bahwa ketahanan psikologis trader diuji bukan oleh kerugian, melainkan oleh godaan untuk 'mengakhiri penderitaan menunggu' dengan memaksakan entry di zona abu-abu; edge sejati dalam kondisi volatil tanpa resolusi struktural adalah kemampuan untuk menerima bahwa pasar tidak berhutang kejelasan kepada kita, dan bahwa setiap menit yang dihabiskan di luar pasar saat kondisi tidak ideal adalah investasi dalam kelangsungan karir trading jangka panjang.",
-      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4269.45) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4310.32 diikuti penembusan support H1 $4301.08 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
-      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support EMA 20 H1 ($4269.45), ATAU pembentukan lower low valid di M15 di bawah $4310.32 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
-    },
-    {
-      "timestamp": "2026-06-15T08:10:34.326Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 15.10.01",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4329,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "BEARISH"
-      },
-      "confluence_score": 4,
-      "market_context": "XAUUSD berada dalam fase VOLATILE di sesi London dengan spread melebar (0.68) dan harga ($4329.13) menguji zona Fibonacci D1 61.8% ($4310.32) dari atas setelah rebound intraday. Struktur H4 menunjukkan momentum bullish (MACD histogram positif, Bullish Engulfing) namun tertahan oleh Ichimoku Cloud bearish dan posisi harga yang sangat dekat dengan resistance mayor $4335.55. Konflik timeframe ekstrem persisten: H1 bullish tapi jenuh beli (RSI 73, Stoch 89), sementara M15 bearish dengan MACD histogram negatif dan Tenkan/Kijun bearish cross. USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan struktural ini.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null,
-      "lesson": "Setelah 48 siklus WAIT berturut-turut di zona Fibonacci D1 61.8%, pasar mengajarkan bahwa 'zona negosiasi makro' memiliki ritme independen yang tidak terpengaruh oleh kelelahan psikologis trader; ketika H1 overbought bertemu M15 bearish divergence di level kunci harian dengan spread melebar, itu bukan sinyal entry melainkan konfirmasi bahwa pasar sedang 'menghabiskan bahan bakar' sebelum memutuskan arah sejati — disiplin untuk tidak bertindak di zona abu-abu ini adalah aset terbesar trader diskresioner.",
-      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4269.45) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4310.32 diikuti penembusan support H1 $4301.08 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
-      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support EMA 20 H1 ($4269.45), ATAU pembentukan lower low valid di M15 di bawah $4310.32 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
-    },
-    {
-      "timestamp": "2026-06-15T08:05:38.156Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 15.05.01",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4328.38,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "BEARISH"
-      },
-      "confluence_score": 4,
-      "market_context": "XAUUSD berada dalam fase VOLATILE di sesi London dengan spread melebar (0.80) dan harga ($4328.38) menguji zona Fibonacci D1 61.8% ($4310.32) dari atas setelah rebound intraday. Struktur H4 menunjukkan momentum bullish (MACD histogram positif, Bullish Engulfing) namun tertahan oleh Ichimoku Cloud bearish dan posisi harga yang sangat dekat dengan resistance mayor $4335.55. Konflik timeframe ekstrem persisten: H1 bullish tapi jenuh beli (RSI 73, Stoch 89), sementara M15 bearish dengan MACD histogram negatif dan Tenkan/Kijun bearish cross. USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan struktural ini.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null,
-      "lesson": "Setelah 47 siklus WAIT berturut-turut di zona Fibonacci D1 61.8%, pasar mengajarkan bahwa 'zona negosiasi makro' memiliki ritme independen yang tidak terpengaruh oleh kelelahan psikologis trader; ketika H1 overbought bertemu M15 bearish divergence di level kunci harian dengan spread melebar, itu bukan sinyal entry melainkan konfirmasi bahwa pasar sedang 'menghabiskan bahan bakar' sebelum memutuskan arah sejati — disiplin untuk tidak bertindak di zona abu-abu ini adalah aset terbesar trader diskresioner.",
-      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4269.39) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4310.32 diikuti penembusan support H1 $4301.08 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
-      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support EMA 20 H1 ($4269.39), ATAU pembentukan lower low valid di M15 di bawah $4310.32 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
-    },
-    {
-      "timestamp": "2026-06-15T08:03:32.839Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 15.02.57",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4325.76,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "BEARISH"
-      },
-      "confluence_score": 4,
-      "market_context": "XAUUSD berada dalam fase VOLATILE di sesi London dengan spread melebar (0.72) dan harga ($4325.76) masih berkonsolidasi presisi di zona Fibonacci D1 61.8% ($4310.32). Struktur H4 menunjukkan uptrend teknikal (MACD histogram positif, Tenkan/Kijun bullish cross) namun tertahan oleh Ichimoku Cloud bearish dan posisi harga yang sangat dekat dengan resistance mayor $4335.55. Konflik timeframe ekstrem persisten: H1 bullish tapi jenuh beli (RSI 72, Stoch 88), sementara M15 bearish dengan MACD histogram negatif dan Tenkan/Kijun bearish cross. USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan struktural ini.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null,
-      "lesson": "Setelah 46 siklus WAIT berturut-turut di zona Fibonacci D1 61.8%, pasar mengajarkan bahwa 'zona negosiasi makro' memiliki ritme independen yang tidak terpengaruh oleh kelelahan psikologis trader; ketika H1 overbought bertemu M15 bearish divergence di level kunci harian dengan spread melebar, itu bukan sinyal entry melainkan konfirmasi bahwa pasar sedang 'menghabiskan bahan bakar' sebelum memutuskan arah sejati — disiplin untuk tidak bertindak di zona abu-abu ini adalah aset terbesar trader diskresioner.",
-      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4269.11) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4310.32 diikuti penembusan support H1 $4301.08 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
-      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support EMA 20 H1 ($4269.11), ATAU pembentukan lower low valid di M15 di bawah $4310.32 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
-    },
-    {
-      "timestamp": "2026-06-15T08:00:40.136Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 15.00.04",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4323.01,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "BEARISH"
-      },
-      "confluence_score": 3,
-      "market_context": "XAUUSD berada dalam fase VOLATILE di sesi London dengan spread melebar (0.69) dan harga ($4322.74) masih berkonsolidasi presisi di zona Fibonacci D1 61.8% ($4310.32). Struktur H4 menunjukkan uptrend teknikal (MACD histogram positif, Tenkan/Kijun bullish cross) namun tertahan oleh Ichimoku Cloud bearish dan posisi harga yang sangat dekat dengan resistance mayor $4335.55. Konflik timeframe ekstrem persisten: H1 bullish tapi jenuh beli (RSI 72, Stoch 88), sementara M15 bearish dengan MACD histogram negatif dan Tenkan/Kijun bearish cross. USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan struktural ini.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null,
-      "lesson": "Setelah 45 siklus WAIT berturut-turut di zona Fibonacci D1 61.8%, pasar mengajarkan bahwa 'zona negosiasi makro' memiliki ritme independen yang tidak terpengaruh oleh kelelahan psikologis trader; ketika H1 overbought bertemu M15 bearish divergence di level kunci harian dengan spread melebar, itu bukan sinyal entry melainkan konfirmasi bahwa pasar sedang 'menghabiskan bahan bakar' sebelum memutuskan arah sejati — disiplin untuk tidak bertindak di zona abu-abu ini adalah aset terbesar trader diskresioner.",
-      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4268.85) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4301.08 diikuti penembusan support H1 $4286.29 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
-      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support EMA 20 H1, ATAU pembentukan lower low valid di M15 di bawah $4301.08 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
-    },
-    {
-      "timestamp": "2026-06-15T07:56:24.126Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 14.55.52",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4321.58,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "BEARISH"
-      },
-      "confluence_score": 4,
-      "market_context": "XAUUSD berada dalam fase VOLATILE di sesi London dengan spread melebar (0.70) dan harga ($4321.58) masih berkonsolidasi di zona Fibonacci D1 61.8% ($4310.32). Struktur H4 sideways dengan Ichimoku Cloud bearish namun MACD histogram positif menciptakan ambiguitas struktural yang persisten. Konflik timeframe ekstrem tetap berlaku: H1 bullish dengan Bullish Engulfing tapi indikator momentum jenuh beli (Stoch 85, RSI 72), sementara M15 bearish dengan MACD histogram negatif dan Tenkan/Kijun cross bearish. USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan ini.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null,
-      "lesson": "Setelah 45 siklus WAIT berturut-turut di zona Fibonacci D1 61.8%, pasar mengajarkan bahwa 'zona negosiasi makro' memiliki ritme independen yang tidak terpengaruh oleh kelelahan psikologis trader; ketika H1 overbought bertemu M15 bearish divergence di level kunci harian dengan spread melebar, itu bukan sinyal entry melainkan konfirmasi bahwa pasar sedang 'menghabiskan bahan bakar' sebelum memutuskan arah sejati — disiplin untuk tidak bertindak di zona abu-abu ini adalah aset terbesar trader diskresioner.",
-      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4263.10) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4301.08 diikuti penembusan support H1 $4286.29 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
-      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support, ATAU pembentukan lower low valid di M15 di bawah $4301.08 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
-    },
-    {
-      "timestamp": "2026-06-15T07:55:37.010Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 14.55.03",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4323.26,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "BEARISH"
-      },
-      "confluence_score": 4,
-      "market_context": "XAUUSD berada dalam fase VOLATILE di sesi London dengan spread melebar (0.68) dan harga ($4323.26) menguji kembali zona Fibonacci D1 61.8% ($4310.32) dari atas setelah rebound intraday. Struktur H4 sideways dengan Ichimoku Cloud bearish namun MACD histogram positif menciptakan ambiguitas struktural yang persisten. Konflik timeframe ekstrem tetap berlaku: H1 bullish dengan Bullish Engulfing tapi indikator momentum jenuh beli (Stoch 85, RSI 72), sementara M15 bearish dengan MACD histogram negatif dan Tenkan/Kijun cross bearish. USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan ini.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null,
-      "lesson": "Setelah 43 siklus WAIT berturut-turut di zona Fibonacci D1 61.8%, pasar mengajarkan bahwa 'zona negosiasi makro' memiliki ritme sendiri yang tidak terikat pada kelelahan psikologis trader; ketika H1 overbought bertemu M15 bearish divergence di level kunci harian, itu bukan sinyal entry melainkan peringatan bahwa pasar sedang 'menghabiskan bahan bakar' sebelum memutuskan arah sejati — disiplin untuk tidak bertindak di zona abu-abu ini adalah aset terbesar trader diskresioner.",
-      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4263) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4301.08 diikuti penembusan support H1 $4286.29 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
-      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support, ATAU pembentukan lower low valid di M15 di bawah $4301.08 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
-    },
-    {
-      "timestamp": "2026-06-15T07:50:36.344Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 14.50.01",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4313.91,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "BEARISH"
-      },
-      "confluence_score": 3,
-      "market_context": "XAUUSD masih terjebak dalam fase VOLATILE di sesi London dengan spread melebar (0.74) dan harga ($4313.91) berkonsolidasi presisi di zona Fibonacci D1 61.8% ($4310.32). Struktur H4 sideways dengan Ichimoku Cloud bearish namun MACD histogram positif menciptakan ambiguitas struktural yang persisten. Konflik timeframe ekstrem tetap berlaku: H1 bullish dengan Bullish Engulfing tapi indikator momentum jenuh beli (Stoch 83, RSI 70), sementara M15 bearish dengan MACD histogram negatif dan Tenkan/Kijun cross bearish. USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan ini.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null,
-      "lesson": "Setelah 42 siklus WAIT berturut-turut di zona Fibonacci D1 61.8%, pasar mengajarkan bahwa level teknikal penting bukan sekadar titik pantul melainkan 'arena negosiasi institusional' yang durasinya tidak terikat ekspektasi waktu trader ritel — edge tertinggi dalam kondisi ini adalah kemampuan membedakan antara 'kesabaran produktif' (menunggu konfirmasi struktur) dan 'kelumpuhan analitis'; saat ini kita masih berada di wilayah kesabaran produktif karena konflik timeframe (H1 overbought vs M15 bearish) belum terselesaikan dan spread melebar mengonfirmasi absennya partisipasi institusional yang decisive.",
-      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4262.30) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4301.08 diikuti penembusan support H1 $4286.29 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
-      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support, ATAU pembentukan lower low valid di M15 di bawah $4301.08 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
-    },
-    {
-      "timestamp": "2026-06-15T07:45:36.852Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 14.45.01",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4316.66,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "BEARISH"
-      },
-      "confluence_score": 3,
-      "market_context": "XAUUSD masih berada dalam fase VOLATILE di sesi London dengan spread melebar (0.77) dan harga ($4316.66) terkonsolidasi presisi di zona Fibonacci D1 61.8% ($4310.32). Struktur H4 sideways dengan Ichimoku Cloud bearish namun MACD histogram positif menciptakan ambiguitas struktural yang persisten. Konflik timeframe ekstrem tetap berlaku: H1 bullish dengan Bullish Engulfing tapi indikator momentum jenuh beli (Stoch 84, RSI 71), sementara M15 bearish dengan MACD histogram negatif. USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan ini.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null,
-      "lesson": "Setelah 41 siklus WAIT berturut-turut di zona Fibonacci D1 61.8%, pasar mengajarkan bahwa level teknikal penting bukan sekadar titik pantul melainkan 'arena negosiasi institusional' yang durasinya tidak terikat ekspektasi waktu trader ritel — edge tertinggi dalam kondisi ini adalah kemampuan membedakan antara 'kesabaran produktif' (menunggu konfirmasi struktur) dan 'kelumpuhan analitis' (terus mencari alasan untuk tidak bertindak padahal setup sudah valid); saat ini kita masih berada di wilayah kesabaran produktif karena konflik timeframe belum terselesaikan.",
-      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4262.63) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4301.08 diikuti penembusan support H1 $4286.29 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
-      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support, ATAU pembentukan lower low valid di M15 di bawah $4301.08 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
-    },
-    {
-      "timestamp": "2026-06-15T07:44:28.602Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 14.43.55",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4316,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "BEARISH"
-      },
-      "confluence_score": 4,
-      "market_context": "XAUUSD masih terjebak dalam fase VOLATILE di sesi London dengan spread melebar (0.72) dan harga ($4316.15) berkonsolidasi ketat tepat di zona Fibonacci D1 61.8% ($4310.32). Struktur H4 sideways dengan Ichimoku Cloud bearish namun MACD histogram positif menciptakan ambiguitas persisten. Konflik timeframe ekstrem: H1 bullish tapi overbought (Stoch 84, Williams %R -14), sementara M15 bearish dengan momentum melemah. USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan struktural ini.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null,
-      "lesson": "Konsistensi 40+ WAIT berturut-turut di zona Fibonacci D1 61.8% dengan konflik timeframe persisten mengajarkan bahwa 'zona negosiasi makro' memiliki durasi yang melampaui ekspektasi psikologis trader rata-rata — edge statistik tertinggi dalam kondisi ini bukan pada kemampuan memprediksi kapan negosiasi selesai, melainkan pada ketahanan mental untuk tetap tidak berpartisipasi sampai pasar sendiri yang memberikan konfirmasi melalui resolusi struktur yang memenuhi standar profesional, terlepas dari seberapa lama waktu yang dibutuhkan.",
-      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4262.58) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4301.08 diikuti penembusan support H1 $4286.29 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
-      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support, ATAU pembentukan lower low valid di M15 di bawah $4301.08 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
-    },
-    {
-      "timestamp": "2026-06-15T07:40:32.776Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 14.40.01",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4315.88,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "BEARISH"
-      },
-      "confluence_score": 4,
-      "market_context": "XAUUSD masih terjebak dalam fase VOLATILE di sesi London dengan spread melebar (0.68) dan harga ($4315.88) berkonsolidasi ketat tepat di zona Fibonacci D1 61.8% ($4310.32). Struktur H4 sideways dengan Ichimoku Cloud bearish namun MACD histogram positif menciptakan ambiguitas persisten. Konflik timeframe ekstrem: H1 bullish tapi overbought (Stoch 84, Williams %R -14), sementara M15 bearish dengan momentum melemah. USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan struktural ini.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null,
-      "lesson": "Konsistensi 40 WAIT berturut-turut di zona Fibonacci D1 61.8% dengan konflik timeframe persisten mengajarkan bahwa 'zona negosiasi makro' memiliki durasi yang melampaui ekspektasi psikologis trader rata-rata — edge statistik tertinggi dalam kondisi ini bukan pada kemampuan memprediksi kapan negosiasi selesai, melainkan pada ketahanan mental untuk tetap tidak berpartisipasi sampai pasar sendiri yang memberikan konfirmasi melalui resolusi struktur yang memenuhi standar profesional, terlepas dari seberapa lama waktu yang dibutuhkan.",
-      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4262.58) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4301.08 diikuti penembusan support H1 $4286.29 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
-      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support, ATAU pembentukan lower low valid di M15 di bawah $4301.08 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
-    },
-    {
-      "timestamp": "2026-06-15T07:38:42.715Z",
-      "timeWib": "Senin, 15 Juni 2026 pukul 14.38.12",
-      "decision": "WAIT",
-      "confidence": 0.45,
-      "price": 4312.42,
-      "market_phase": "VOLATILE",
-      "bias": {
-        "H4": "NEUTRAL",
-        "H1": "BULLISH",
-        "M15": "BEARISH"
-      },
-      "confluence_score": 4,
-      "market_context": "XAUUSD masih terjebak dalam fase VOLATILE di sesi London dengan spread melebar (0.81) dan harga ($4312.42) berkonsolidasi ketat tepat di zona Fibonacci D1 61.8% ($4310.32). Struktur H4 sideways dengan Ichimoku Cloud bearish namun MACD histogram positif menciptakan ambiguitas persisten. Konflik timeframe ekstrem: H1 bullish tapi overbought (Stoch 83, Williams %R -17), sementara M15 bearish dengan Bearish Engulfing valid. USD netral tidak memberikan katalis eksternal untuk memecah kebuntuan struktural ini.",
-      "entry_price": null,
-      "take_profit": null,
-      "stop_loss": null,
-      "lesson": "Ketika harga berkemah di Fibonacci D1 61.8% selama 38+ siklus dengan konflik timeframe persisten (H1 overbought vs M15 bearish engulfing), pasar sedang mengajarkan bahwa 'zona negosiasi makro' memiliki durasi yang tidak linier — edge terbesar bukan pada prediksi arah breakout, melainkan pada kemampuan menahan diri dari godaan menginterpretasikan noise sebagai sinyal, terutama ketika spread melebar dan volatilitas tinggi menciptakan ilusi pergerakan yang bermakna.",
-      "invalidation": "Breakout valid H1 close di atas $4335.55 dengan volume signifikan DAN koreksi sehat ke EMA 20 H1 ($4262.22) yang hold sebagai support baru — hanya setelah itu bias bisa berubah menjadi BULLISH. Atau sebaliknya, breakdown M15 close di bawah $4301.08 diikuti penembusan support H1 $4286.29 dengan konfirmasi MACD cross bearish untuk membuka peluang SELL.",
-      "what_would_change_my_mind": "Close H4 di atas $4335.55 disertai penurunan RSI H1 ke zona netral (50-60) sebagai tanda koreksi sehat yang berhasil hold support, ATAU pembentukan lower low valid di M15 di bawah $4301.08 dengan konfirmasi MACD cross bearish dan peningkatan volume — salah satu dari dua kondisi ini akan mengubah keputusan WAIT menjadi BUY/SELL dengan konfidensi ≥0.60."
     }
   ],
   "sessionStats": {
     "wins": 0,
     "losses": 0,
     "totalSignals": 0,
-    "totalAnalyses": 58,
-    "waitCount": 58,
+    "totalAnalyses": 70,
+    "waitCount": 70,
     "lastMarketPhases": [
       "VOLATILE",
       "VOLATILE",
@@ -453,5 +453,5 @@
     },
     "phasePerformance": {}
   },
-  "savedAt": "2026-06-15T08:55:40.446Z"
+  "savedAt": "2026-06-15T10:12:02.239Z"
 }

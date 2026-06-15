@@ -23,12 +23,12 @@ interface SessionConfig {
 
 function getSessionConfig(): SessionConfig {
   const h = new Date().getUTCHours();
-  // Asia session 22:00–07:59 UTC (05:00–14:59 WIB) — lebih longgar dari sebelumnya
-  if (h >= 22 || h < 8) return { confidenceMin: 0.58, confluenceMin: 4, label: "Asia" };
-  // London+NY overlap 12:00–15:59 UTC — sesi paling aktif
-  if (h >= 12 && h < 16) return { confidenceMin: 0.53, confluenceMin: 4, label: "London+NY Overlap (aktif)" };
+  // Asia session 22:00–07:59 UTC (05:00–14:59 WIB)
+  if (h >= 22 || h < 8) return { confidenceMin: 0.52, confluenceMin: 4, label: "Asia" };
+  // London+NY overlap 12:00–15:59 UTC — sesi paling aktif, paling longgar
+  if (h >= 12 && h < 16) return { confidenceMin: 0.46, confluenceMin: 4, label: "London+NY Overlap (aktif)" };
   // London 08:00–11:59 UTC / NY 16:00–21:59 UTC
-  return { confidenceMin: 0.55, confluenceMin: 4, label: "London/NY (standar)" };
+  return { confidenceMin: 0.49, confluenceMin: 4, label: "London/NY (standar)" };
 }
 
 // ─── Monitor State (TP1/TP2 + Trailing SL) ───────────────────────────────────
