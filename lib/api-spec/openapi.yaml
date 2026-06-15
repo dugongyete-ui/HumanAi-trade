@@ -16,6 +16,8 @@ tags:
     description: Trading signals
   - name: market
     description: Market data
+  - name: calendar
+    description: Economic calendar
 paths:
   /healthz:
     get:
@@ -110,6 +112,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MarketData"
+  /calendar:
+    get:
+      operationId: getCalendar
+      tags: [calendar]
+      summary: Get upcoming economic calendar events
+      responses:
+        "200":
+          description: Calendar events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarResponse"
 components:
   schemas:
     HealthStatus:
@@ -119,11 +133,49 @@ components:
           type: string
       required:
         - status
+    WinRate:
+      type: object
+      properties:
+        wins:
+          type: integer
+        losses:
+          type: integer
+        rate:
+          type: integer
+      required:
+        - wins
+        - losses
+        - rate
+    MonitorState:
+      type: object
+      properties:
+        tp1:
+          type: number
+          description: First target (50% milestone), SL moves to breakeven when hit
+        tp2:
+          type: number
+          description: Final target (original TP)
+        trailingSL:
+          type: number
+          description: Active stop loss — starts at original SL, moves to breakeven on TP1
+        tp1Hit:
+          type: boolean
+          description: Whether the TP1 milestone has been reached
+      required:
+        - tp1
+        - tp2
+        - trailingSL
+        - tp1Hit
     BotStatus:
       type: object
       properties:
         running:
           type: boolean
+        paused:
+          type: boolean
+        mode:
+          type: string
+          enum: [ANALYZING, MONITORING]
         lastAnalysis:
           type: string
           nullable: true
@@ -132,13 +184,24 @@ components:
         lastSignal:
           $ref: "#/components/schemas/Signal"
           nullable: true
+        activeSignal:
+          $ref: "#/components/schemas/Signal"
+          nullable: true
+        monitorState:
+          $ref: "#/components/schemas/MonitorState"
+          nullable: true
+        winRate:
+          $ref: "#/components/schemas/WinRate"
         nextAnalysisIn:
           type: integer
           nullable: true
           description: Seconds until next scheduled analysis
       required:
         - running
+        - paused
+        - mode
         - totalSignals
+        - winRate
     Signal:
       type: object
       properties:
@@ -166,6 +229,20 @@ components:
           type: string
         current_price:
           type: number
+        status:
+          type: string
+          enum: [active, tp_hit, sl_hit, wait, tp1_hit]
+          nullable: true
+        result:
+          type: string
+          enum: [WIN, LOSS]
+          nullable: true
+        exit_price:
+          type: number
+          nullable: true
+        exit_time:
+          type: string
+          nullable: true
       required:
         - id
         - timestamp
@@ -218,3 +295,50 @@ components:
         - low
         - close
         - epoch
+    CalendarEvent:
+      type: object
+      properties:
+        title:
+          type: string
+        date:
+          type: string
+          description: ISO datetime string (EST timezone)
+        country:
+          type: string
+        impact:
+          type: string
+        forecast:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        actual:
+          type: string
+          nullable: true
+      required:
+        - title
+        - date
+        - country
+        - impact
+    CalendarResponse:
+      type: object
+      properties:
+        alertLevel:
+          type: string
+          enum: [CLEAR, CAUTION, HIGH_ALERT]
+        alertMessage:
+          type: string
+        upcomingEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalendarEvent"
+        todayEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalendarEvent"
+      required:
+        - alertLevel
+        - alertMessage
+        - upcomingEvents
+        - todayEvents

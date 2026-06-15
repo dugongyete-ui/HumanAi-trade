@@ -1,6 +1,6 @@
 import TelegramBot from "node-telegram-bot-api";
 import { logger } from "./logger.js";
-import type { Signal } from "./signal-store.js";
+import { getSignals, type Signal } from "./signal-store.js";
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID ?? "";
@@ -38,6 +38,8 @@ export async function sendMessage(text: string, chatId?: string): Promise<void> 
   }
 }
 
+// ─── Labels ───────────────────────────────────────────────────────────────────
+
 const PHASE_LABEL: Record<string, string> = {
   TRENDING_UP: "📈 Trending Naik",
   TRENDING_DOWN: "📉 Trending Turun",
@@ -54,6 +56,8 @@ const BIAS_EMOJI: Record<string, string> = {
   NEUTRAL: "⚪",
 };
 
+// ─── Format: BUY/SELL/WAIT Signal ────────────────────────────────────────────
+
 export function formatSignal(signal: Signal): string {
   const decisionEmoji =
     signal.decision === "BUY" ? "🟢" : signal.decision === "SELL" ? "🔴" : "⏸️";
@@ -61,22 +65,16 @@ export function formatSignal(signal: Signal): string {
   const filled = Math.round(confidencePct / 10);
   const confidenceBar = "█".repeat(filled) + "░".repeat(10 - filled);
 
-  const ts = new Date(signal.timestamp);
-  const timeStr = ts.toLocaleString("id-ID", {
+  const ts = new Date(signal.timestamp).toLocaleString("id-ID", {
     timeZone: "Asia/Jakarta",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
   });
 
   const phaseLabel = PHASE_LABEL[signal.market_phase] ?? signal.market_phase ?? "-";
-
   const biasH4 = BIAS_EMOJI[signal.timeframe_bias?.H4 ?? "NEUTRAL"] ?? "⚪";
   const biasH1 = BIAS_EMOJI[signal.timeframe_bias?.H1 ?? "NEUTRAL"] ?? "⚪";
   const biasM15 = BIAS_EMOJI[signal.timeframe_bias?.M15 ?? "NEUTRAL"] ?? "⚪";
-
   const confluenceScore = signal.confluence_score ?? 0;
   const confluenceBar = "■".repeat(confluenceScore) + "□".repeat(Math.max(0, 10 - confluenceScore));
 
@@ -88,11 +86,10 @@ export function formatSignal(signal: Signal): string {
       `🗺️ Fase Pasar: <b>${phaseLabel}</b>\n` +
       `📊 Confidence: <b>${confidencePct}%</b> [${confidenceBar}]\n` +
       `🔗 Confluence: <b>${confluenceScore}/10</b> [${confluenceBar}]\n\n` +
-      `🧭 Bias Timeframe:\n` +
-      `  H4 ${biasH4}  H1 ${biasH1}  M15 ${biasM15}\n\n` +
+      `🧭 Bias Timeframe:\n  H4 ${biasH4}  H1 ${biasH1}  M15 ${biasM15}\n\n` +
       `📋 <i>${signal.market_context}</i>\n\n` +
       `💬 <b>Analisis Atlas:</b>\n${signal.reasoning}\n\n` +
-      `⏰ ${timeStr} WIB`
+      `⏰ ${ts} WIB`
     );
   }
 
@@ -119,6 +116,17 @@ export function formatSignal(signal: Signal): string {
     ? `\n\n⚠️ <b>Invalidasi:</b> <i>${signal.invalidation}</i>`
     : "";
 
+  // Show TP1/TP2 info for non-WAIT signals
+  const entryNum = signal.entry_price ?? signal.current_price;
+  const tpNum = signal.take_profit;
+  let tp1tp2Text = "";
+  if (tpNum) {
+    const tp1 = signal.decision === "BUY"
+      ? entryNum + (tpNum - entryNum) * 0.5
+      : entryNum - (entryNum - tpNum) * 0.5;
+    tp1tp2Text = `\n🎯 TP1 (50%): <b>$${tp1.toFixed(2)}</b>  →  TP2 (final): <b>$${tpNum.toFixed(2)}</b>`;
+  }
+
   return (
     `${decisionEmoji} <b>ATLAS — ${signal.decision} | XAUUSD</b>\n` +
     `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -126,10 +134,9 @@ export function formatSignal(signal: Signal): string {
     `🗺️ Fase Pasar: <b>${phaseLabel}</b>\n` +
     `📊 Confidence: <b>${confidencePct}%</b> [${confidenceBar}]\n` +
     `🔗 Confluence: <b>${confluenceScore}/10</b> [${confluenceBar}]\n\n` +
-    `🧭 Bias Timeframe:\n` +
-    `  H4 ${biasH4}  H1 ${biasH1}  M15 ${biasM15}\n\n` +
+    `🧭 Bias Timeframe:\n  H4 ${biasH4}  H1 ${biasH1}  M15 ${biasM15}\n\n` +
     `💰 Entry: <b>$${entry}</b>\n` +
-    `🎯 Take Profit: <b>$${tp}</b>\n` +
+    tp1tp2Text + "\n" +
     `🛡️ Stop Loss: <b>$${sl}</b>` +
     rrText +
     levelsText +
@@ -137,45 +144,91 @@ export function formatSignal(signal: Signal): string {
     `📋 <i>${signal.market_context}</i>\n\n` +
     `💬 <b>Analisis Atlas:</b>\n${signal.reasoning}` +
     invalidation +
-    `\n\n⏰ ${timeStr} WIB`
+    `\n\n⏰ ${ts} WIB`
   );
 }
 
-export function formatResult(signal: Signal, result: "WIN" | "LOSS", exitPrice: number): string {
-  const isWin = result === "WIN";
+// ─── Format: TP1 Partial Hit ──────────────────────────────────────────────────
+
+export function formatPartialTP(
+  signal: Signal,
+  currentPrice: number,
+  tp1: number,
+  tp2: number
+): string {
   const ts = new Date().toLocaleString("id-ID", {
     timeZone: "Asia/Jakarta",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
   });
 
   const entryPrice = signal.entry_price ?? signal.current_price;
-  const rawPips = signal.decision === "BUY"
-    ? exitPrice - entryPrice
-    : entryPrice - exitPrice;
-  const pipsLabel = (rawPips >= 0 ? "+" : "") + rawPips.toFixed(2);
-
-  const duration = signal.exit_time
-    ? Math.round((new Date(signal.exit_time).getTime() - new Date(signal.timestamp).getTime()) / 60000)
-    : null;
+  const profitSoFar = Math.abs(currentPrice - entryPrice).toFixed(2);
+  const remainingToTP2 = Math.abs(tp2 - currentPrice).toFixed(2);
 
   return (
-    (isWin
-      ? `🏆 <b>ATLAS — PROFIT | TAKE PROFIT HIT ✅</b>\n`
-      : `💔 <b>ATLAS — LOSS | STOP LOSS HIT ❌</b>\n`) +
+    `🎯 <b>ATLAS — TP1 HIT! Target 50% Tercapai ✅</b>\n` +
     `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
     `📌 Sinyal: <b>${signal.decision} XAUUSD</b>\n` +
     `💰 Entry: <b>$${entryPrice.toFixed(2)}</b>\n` +
-    `${isWin ? "🎯" : "🛑"} Exit: <b>$${exitPrice.toFixed(2)}</b>\n` +
+    `🎯 TP1 Hit: <b>$${currentPrice.toFixed(2)}</b> (+${profitSoFar} pip)\n\n` +
+    `🔄 <b>Adjustment Otomatis:</b>\n` +
+    `  🛡️ SL dipindah ke Breakeven: <b>$${entryPrice.toFixed(2)}</b>\n` +
+    `  🎯 Menunggu TP2: <b>$${tp2.toFixed(2)}</b> (${remainingToTP2} pip lagi)\n\n` +
+    `💬 <i>Posisi sekarang terlindungi. Risiko = NOL. Menunggu TP2...</i>\n\n` +
+    `⏰ ${ts} WIB`
+  );
+}
+
+// ─── Format: WIN / LOSS / Breakeven ──────────────────────────────────────────
+
+export function formatResult(
+  signal: Signal,
+  result: "WIN" | "LOSS",
+  exitPrice: number,
+  isBreakeven = false
+): string {
+  const ts = new Date().toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+
+  const entryPrice = signal.entry_price ?? signal.current_price;
+  const rawPips = signal.decision === "BUY" ? exitPrice - entryPrice : entryPrice - exitPrice;
+  const pipsLabel = isBreakeven
+    ? "±0.00 (modal aman)"
+    : (rawPips >= 0 ? "+" : "") + rawPips.toFixed(2);
+
+  const duration = signal.exit_time
+    ? Math.round(
+        (new Date(signal.exit_time).getTime() - new Date(signal.timestamp).getTime()) / 60000
+      )
+    : null;
+
+  let header: string;
+  if (isBreakeven) {
+    header = `⚖️ <b>ATLAS — BREAKEVEN | SL hit setelah TP1 (Modal Aman) ✅</b>\n`;
+  } else if (result === "WIN") {
+    header = `🏆 <b>ATLAS — PROFIT | TAKE PROFIT HIT ✅</b>\n`;
+  } else {
+    header = `💔 <b>ATLAS — LOSS | STOP LOSS HIT ❌</b>\n`;
+  }
+
+  return (
+    header +
+    `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `📌 Sinyal: <b>${signal.decision} XAUUSD</b>\n` +
+    `💰 Entry: <b>$${entryPrice.toFixed(2)}</b>\n` +
+    `${isBreakeven ? "⚖️" : result === "WIN" ? "🎯" : "🛑"} Exit: <b>$${exitPrice.toFixed(2)}</b>\n` +
     `📊 P&L: <b>${pipsLabel} pips</b>\n` +
     (duration !== null ? `⏱️ Durasi: <b>${duration} menit</b>\n` : "") +
     `\n⏰ ${ts} WIB\n\n` +
     `▶️ <i>Atlas melanjutkan analisis otomatis setiap 1 menit...</i>`
   );
 }
+
+// ─── Commands ─────────────────────────────────────────────────────────────────
 
 export function registerCommands(
   onAnalyze: () => Promise<Signal | null>,
@@ -188,13 +241,14 @@ export function registerCommands(
   bot.onText(/\/(start|help)/, async (msg) => {
     const chatId = msg.chat.id.toString();
     await sendMessage(
-      `🤖 <b>XAUUSD AI Trading Bot</b>\n\n` +
-        `Bot ini menganalisis pasar emas menggunakan AI dan indikator teknikal multi-timeframe.\n\n` +
+      `🤖 <b>XAUUSD AI Trading Bot — Atlas</b>\n\n` +
+        `Bot otonom yang menganalisis pasar emas setiap 1 menit menggunakan AI multi-timeframe.\n\n` +
         `<b>Perintah tersedia:</b>\n` +
         `/analyze — Analisis pasar sekarang\n` +
-        `/status — Status bot & sinyal terakhir\n` +
+        `/status — Status bot, mode, sinyal aktif, win rate\n` +
+        `/history — Riwayat 5 sinyal terakhir\n` +
         `/pause — Hentikan analisis otomatis\n` +
-        `/resume — Mulai kembali analisis otomatis\n` +
+        `/resume — Lanjutkan analisis otomatis\n` +
         `/help — Tampilkan bantuan ini`,
       chatId
     );
@@ -211,20 +265,19 @@ export function registerCommands(
         await sendMessage("❌ Analisis gagal. Coba lagi nanti.", chatId);
       }
     } catch (err) {
-      const msg2 = err instanceof Error ? err.message : "Unknown error";
-      if (msg2 === "market_closed" || msg2.toLowerCase().includes("closed")) {
+      const errMsg = err instanceof Error ? err.message : "Unknown error";
+      if (errMsg === "market_closed" || errMsg.toLowerCase().includes("closed")) {
         await sendMessage(
           "🔒 <b>Pasar XAUUSD Deriv Sedang Tutup</b>\n\n" +
             "📅 <b>Jadwal Deriv frxXAUUSD:</b>\n" +
             "• Buka: Senin – Jumat, mulai <b>07:00 WIB</b> (00:00 UTC)\n" +
             "• Tutup: Sabtu dini hari s/d Senin 07:00 WIB\n" +
             "• Jumat tutup lebih awal pukul ~03:55 WIB (20:55 UTC)\n\n" +
-            "⏰ Bot akan otomatis menganalisis dalam ≤15 menit setelah pasar buka.\n" +
-            "Tidak perlu melakukan apa-apa.",
+            "⏰ Bot akan otomatis menganalisis ≤1 menit setelah pasar buka.",
           chatId
         );
       } else {
-        await sendMessage(`❌ Error: ${msg2}`, chatId);
+        await sendMessage(`❌ Error: ${errMsg}`, chatId);
       }
     }
   });
@@ -238,7 +291,19 @@ export function registerCommands(
       totalSignals: number;
       lastAnalysis: string | null;
       nextAnalysisIn: number | null;
-      activeSignal: { decision: string; entry_price?: number; take_profit?: number; stop_loss?: number; timestamp: string } | null;
+      activeSignal: {
+        decision: string;
+        entry_price?: number;
+        take_profit?: number;
+        stop_loss?: number;
+        timestamp: string;
+      } | null;
+      monitorState: {
+        tp1: number;
+        tp2: number;
+        trailingSL: number;
+        tp1Hit: boolean;
+      } | null;
       winRate: { wins: number; losses: number; rate: number };
     };
 
@@ -248,9 +313,23 @@ export function registerCommands(
         : "🔍 ANALYZING (analisis otomatis)";
 
     let activeInfo = "";
-    if (status.activeSignal) {
+    if (status.activeSignal && status.monitorState) {
       const a = status.activeSignal;
-      const since = new Date(a.timestamp).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit" });
+      const ms = status.monitorState;
+      const since = new Date(a.timestamp).toLocaleString("id-ID", {
+        timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit",
+      });
+      activeInfo =
+        `\n📌 Sinyal Aktif: <b>${a.decision}</b> sejak ${since} WIB\n` +
+        `   💰 Entry: <b>$${(a.entry_price ?? 0).toFixed(2)}</b>\n` +
+        `   🎯 TP1: <b>$${ms.tp1.toFixed(2)}</b>${ms.tp1Hit ? " ✅ HIT" : ""}\n` +
+        `   🎯 TP2: <b>$${ms.tp2.toFixed(2)}</b>\n` +
+        `   🛡️ Trailing SL: <b>$${ms.trailingSL.toFixed(2)}</b>${ms.tp1Hit ? " (breakeven)" : ""}\n`;
+    } else if (status.activeSignal) {
+      const a = status.activeSignal;
+      const since = new Date(a.timestamp).toLocaleString("id-ID", {
+        timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit",
+      });
       activeInfo =
         `\n📌 Sinyal Aktif: <b>${a.decision}</b> sejak ${since} WIB\n` +
         `   🎯 TP: <b>$${a.take_profit?.toFixed(2) ?? "-"}</b>  🛑 SL: <b>$${a.stop_loss?.toFixed(2) ?? "-"}</b>\n`;
@@ -258,7 +337,7 @@ export function registerCommands(
 
     const nextInfo =
       status.mode === "MONITORING"
-        ? "⏳ Menunggu trigger TP/SL..."
+        ? "⏳ Menunggu trigger TP1/TP2/SL..."
         : status.nextAnalysisIn != null
           ? `⏰ Analisis berikutnya: <b>${status.nextAnalysisIn}s lagi</b>`
           : "";
@@ -277,6 +356,68 @@ export function registerCommands(
       nextInfo;
 
     await sendMessage(msg2, chatId);
+  });
+
+  bot.onText(/\/history/, async (msg) => {
+    const chatId = msg.chat.id.toString();
+    const recent = getSignals(5);
+
+    if (recent.length === 0) {
+      await sendMessage("📋 Belum ada riwayat sinyal.", chatId);
+      return;
+    }
+
+    const lines: string[] = [`📋 <b>ATLAS — Riwayat 5 Sinyal Terakhir</b>\n━━━━━━━━━━━━━━━━━━━━━━━━`];
+
+    recent.forEach((s, i) => {
+      const timeStr = new Date(s.timestamp).toLocaleString("id-ID", {
+        timeZone: "Asia/Jakarta",
+        day: "2-digit", month: "short",
+        hour: "2-digit", minute: "2-digit",
+      });
+
+      const decisionEmoji =
+        s.decision === "BUY" ? "🟢" : s.decision === "SELL" ? "🔴" : "⏸️";
+      const confPct = Math.round(s.confidence * 100);
+
+      let resultTag = "";
+      if (s.result === "WIN") {
+        const pips = s.exit_price
+          ? (s.decision === "BUY" ? s.exit_price - (s.entry_price ?? s.current_price) : (s.entry_price ?? s.current_price) - s.exit_price)
+          : 0;
+        resultTag = ` → ✅ WIN (+${pips.toFixed(2)})`;
+      } else if (s.result === "LOSS") {
+        const pips = s.exit_price
+          ? Math.abs(s.exit_price - (s.entry_price ?? s.current_price))
+          : 0;
+        resultTag = ` → ❌ LOSS (-${pips.toFixed(2)})`;
+      } else if (s.status === "active") {
+        resultTag = " → ⏳ AKTIF";
+      }
+
+      lines.push(
+        `${i + 1}. ${decisionEmoji} <b>${s.decision}</b> | $${s.current_price.toFixed(2)} | ${confPct}% | ${timeStr}${resultTag}`
+      );
+    });
+
+    const { wins, losses, rate } = (() => {
+      const closed = recent.filter((s) => s.result);
+      const w = closed.filter((s) => s.result === "WIN").length;
+      const l = closed.filter((s) => s.result === "LOSS").length;
+      return { wins: w, losses: l, rate: closed.length > 0 ? Math.round((w / closed.length) * 100) : 0 };
+    })();
+
+    if (wins + losses > 0) {
+      lines.push(`\n📊 Win Rate (5 sinyal): <b>${wins}W / ${losses}L = ${rate}%</b>`);
+    }
+
+    const now = new Date().toLocaleString("id-ID", {
+      timeZone: "Asia/Jakarta", day: "2-digit", month: "short",
+      hour: "2-digit", minute: "2-digit",
+    });
+    lines.push(`⏰ Update: ${now} WIB`);
+
+    await sendMessage(lines.join("\n"), chatId);
   });
 
   bot.onText(/\/pause/, async (msg) => {

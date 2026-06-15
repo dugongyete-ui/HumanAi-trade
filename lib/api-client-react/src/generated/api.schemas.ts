@@ -9,6 +9,31 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface WinRate {
+  wins: number;
+  losses: number;
+  rate: number;
+}
+
+export interface MonitorState {
+  /** First target (50% milestone), SL moves to breakeven when hit */
+  tp1: number;
+  /** Final target (original TP) */
+  tp2: number;
+  /** Active stop loss — starts at original SL, moves to breakeven on TP1 */
+  trailingSL: number;
+  /** Whether the TP1 milestone has been reached */
+  tp1Hit: boolean;
+}
+
+export type BotStatusMode = typeof BotStatusMode[keyof typeof BotStatusMode];
+
+
+export const BotStatusMode = {
+  ANALYZING: 'ANALYZING',
+  MONITORING: 'MONITORING',
+} as const;
+
 export type SignalDecision = typeof SignalDecision[keyof typeof SignalDecision];
 
 
@@ -16,6 +41,25 @@ export const SignalDecision = {
   BUY: 'BUY',
   SELL: 'SELL',
   WAIT: 'WAIT',
+} as const;
+
+export type SignalStatus = typeof SignalStatus[keyof typeof SignalStatus] | null;
+
+
+export const SignalStatus = {
+  active: 'active',
+  tp_hit: 'tp_hit',
+  sl_hit: 'sl_hit',
+  wait: 'wait',
+  tp1_hit: 'tp1_hit',
+} as const;
+
+export type SignalResult = typeof SignalResult[keyof typeof SignalResult] | null;
+
+
+export const SignalResult = {
+  WIN: 'WIN',
+  LOSS: 'LOSS',
 } as const;
 
 export interface Signal {
@@ -29,13 +73,22 @@ export interface Signal {
   reasoning: string;
   market_context: string;
   current_price: number;
+  status?: SignalStatus;
+  result?: SignalResult;
+  exit_price?: number | null;
+  exit_time?: string | null;
 }
 
 export interface BotStatus {
   running: boolean;
+  paused: boolean;
+  mode: BotStatusMode;
   lastAnalysis?: string | null;
   totalSignals: number;
   lastSignal?: Signal | null;
+  activeSignal?: Signal | null;
+  monitorState?: MonitorState | null;
+  winRate: WinRate;
   /** Seconds until next scheduled analysis */
   nextAnalysisIn?: number | null;
 }
@@ -56,6 +109,33 @@ export interface MarketData {
   timestamp: string;
   candles_m15?: Candle[];
   candles_h1?: Candle[];
+}
+
+export interface CalendarEvent {
+  title: string;
+  /** ISO datetime string (EST timezone) */
+  date: string;
+  country: string;
+  impact: string;
+  forecast?: string | null;
+  previous?: string | null;
+  actual?: string | null;
+}
+
+export type CalendarResponseAlertLevel = typeof CalendarResponseAlertLevel[keyof typeof CalendarResponseAlertLevel];
+
+
+export const CalendarResponseAlertLevel = {
+  CLEAR: 'CLEAR',
+  CAUTION: 'CAUTION',
+  HIGH_ALERT: 'HIGH_ALERT',
+} as const;
+
+export interface CalendarResponse {
+  alertLevel: CalendarResponseAlertLevel;
+  alertMessage: string;
+  upcomingEvents: CalendarEvent[];
+  todayEvents: CalendarEvent[];
 }
 
 export type GetSignalsParams = {

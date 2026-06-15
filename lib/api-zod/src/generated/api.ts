@@ -22,6 +22,8 @@ export const HealthCheckResponse = zod.object({
  */
 export const GetBotStatusResponse = zod.object({
   "running": zod.boolean(),
+  "paused": zod.boolean(),
+  "mode": zod.enum(['ANALYZING', 'MONITORING']),
   "lastAnalysis": zod.string().nullish(),
   "totalSignals": zod.number(),
   "lastSignal": zod.object({
@@ -34,8 +36,39 @@ export const GetBotStatusResponse = zod.object({
   "stop_loss": zod.number().nullish(),
   "reasoning": zod.string(),
   "market_context": zod.string(),
-  "current_price": zod.number()
+  "current_price": zod.number(),
+  "status": zod.enum(['active', 'tp_hit', 'sl_hit', 'wait', 'tp1_hit']).nullish(),
+  "result": zod.enum(['WIN', 'LOSS']).nullish(),
+  "exit_price": zod.number().nullish(),
+  "exit_time": zod.string().nullish()
 }).nullish(),
+  "activeSignal": zod.object({
+  "id": zod.string(),
+  "timestamp": zod.string(),
+  "decision": zod.enum(['BUY', 'SELL', 'WAIT']),
+  "confidence": zod.number(),
+  "entry_price": zod.number().nullish(),
+  "take_profit": zod.number().nullish(),
+  "stop_loss": zod.number().nullish(),
+  "reasoning": zod.string(),
+  "market_context": zod.string(),
+  "current_price": zod.number(),
+  "status": zod.enum(['active', 'tp_hit', 'sl_hit', 'wait', 'tp1_hit']).nullish(),
+  "result": zod.enum(['WIN', 'LOSS']).nullish(),
+  "exit_price": zod.number().nullish(),
+  "exit_time": zod.string().nullish()
+}).nullish(),
+  "monitorState": zod.object({
+  "tp1": zod.number().describe('First target (50% milestone), SL moves to breakeven when hit'),
+  "tp2": zod.number().describe('Final target (original TP)'),
+  "trailingSL": zod.number().describe('Active stop loss — starts at original SL, moves to breakeven on TP1'),
+  "tp1Hit": zod.boolean().describe('Whether the TP1 milestone has been reached')
+}).nullish(),
+  "winRate": zod.object({
+  "wins": zod.number(),
+  "losses": zod.number(),
+  "rate": zod.number()
+}),
   "nextAnalysisIn": zod.number().nullish().describe('Seconds until next scheduled analysis')
 })
 
@@ -45,6 +78,8 @@ export const GetBotStatusResponse = zod.object({
  */
 export const StartBotResponse = zod.object({
   "running": zod.boolean(),
+  "paused": zod.boolean(),
+  "mode": zod.enum(['ANALYZING', 'MONITORING']),
   "lastAnalysis": zod.string().nullish(),
   "totalSignals": zod.number(),
   "lastSignal": zod.object({
@@ -57,8 +92,39 @@ export const StartBotResponse = zod.object({
   "stop_loss": zod.number().nullish(),
   "reasoning": zod.string(),
   "market_context": zod.string(),
-  "current_price": zod.number()
+  "current_price": zod.number(),
+  "status": zod.enum(['active', 'tp_hit', 'sl_hit', 'wait', 'tp1_hit']).nullish(),
+  "result": zod.enum(['WIN', 'LOSS']).nullish(),
+  "exit_price": zod.number().nullish(),
+  "exit_time": zod.string().nullish()
 }).nullish(),
+  "activeSignal": zod.object({
+  "id": zod.string(),
+  "timestamp": zod.string(),
+  "decision": zod.enum(['BUY', 'SELL', 'WAIT']),
+  "confidence": zod.number(),
+  "entry_price": zod.number().nullish(),
+  "take_profit": zod.number().nullish(),
+  "stop_loss": zod.number().nullish(),
+  "reasoning": zod.string(),
+  "market_context": zod.string(),
+  "current_price": zod.number(),
+  "status": zod.enum(['active', 'tp_hit', 'sl_hit', 'wait', 'tp1_hit']).nullish(),
+  "result": zod.enum(['WIN', 'LOSS']).nullish(),
+  "exit_price": zod.number().nullish(),
+  "exit_time": zod.string().nullish()
+}).nullish(),
+  "monitorState": zod.object({
+  "tp1": zod.number().describe('First target (50% milestone), SL moves to breakeven when hit'),
+  "tp2": zod.number().describe('Final target (original TP)'),
+  "trailingSL": zod.number().describe('Active stop loss — starts at original SL, moves to breakeven on TP1'),
+  "tp1Hit": zod.boolean().describe('Whether the TP1 milestone has been reached')
+}).nullish(),
+  "winRate": zod.object({
+  "wins": zod.number(),
+  "losses": zod.number(),
+  "rate": zod.number()
+}),
   "nextAnalysisIn": zod.number().nullish().describe('Seconds until next scheduled analysis')
 })
 
@@ -68,6 +134,8 @@ export const StartBotResponse = zod.object({
  */
 export const StopBotResponse = zod.object({
   "running": zod.boolean(),
+  "paused": zod.boolean(),
+  "mode": zod.enum(['ANALYZING', 'MONITORING']),
   "lastAnalysis": zod.string().nullish(),
   "totalSignals": zod.number(),
   "lastSignal": zod.object({
@@ -80,8 +148,39 @@ export const StopBotResponse = zod.object({
   "stop_loss": zod.number().nullish(),
   "reasoning": zod.string(),
   "market_context": zod.string(),
-  "current_price": zod.number()
+  "current_price": zod.number(),
+  "status": zod.enum(['active', 'tp_hit', 'sl_hit', 'wait', 'tp1_hit']).nullish(),
+  "result": zod.enum(['WIN', 'LOSS']).nullish(),
+  "exit_price": zod.number().nullish(),
+  "exit_time": zod.string().nullish()
 }).nullish(),
+  "activeSignal": zod.object({
+  "id": zod.string(),
+  "timestamp": zod.string(),
+  "decision": zod.enum(['BUY', 'SELL', 'WAIT']),
+  "confidence": zod.number(),
+  "entry_price": zod.number().nullish(),
+  "take_profit": zod.number().nullish(),
+  "stop_loss": zod.number().nullish(),
+  "reasoning": zod.string(),
+  "market_context": zod.string(),
+  "current_price": zod.number(),
+  "status": zod.enum(['active', 'tp_hit', 'sl_hit', 'wait', 'tp1_hit']).nullish(),
+  "result": zod.enum(['WIN', 'LOSS']).nullish(),
+  "exit_price": zod.number().nullish(),
+  "exit_time": zod.string().nullish()
+}).nullish(),
+  "monitorState": zod.object({
+  "tp1": zod.number().describe('First target (50% milestone), SL moves to breakeven when hit'),
+  "tp2": zod.number().describe('Final target (original TP)'),
+  "trailingSL": zod.number().describe('Active stop loss — starts at original SL, moves to breakeven on TP1'),
+  "tp1Hit": zod.boolean().describe('Whether the TP1 milestone has been reached')
+}).nullish(),
+  "winRate": zod.object({
+  "wins": zod.number(),
+  "losses": zod.number(),
+  "rate": zod.number()
+}),
   "nextAnalysisIn": zod.number().nullish().describe('Seconds until next scheduled analysis')
 })
 
@@ -99,7 +198,11 @@ export const TriggerAnalysisResponse = zod.object({
   "stop_loss": zod.number().nullish(),
   "reasoning": zod.string(),
   "market_context": zod.string(),
-  "current_price": zod.number()
+  "current_price": zod.number(),
+  "status": zod.enum(['active', 'tp_hit', 'sl_hit', 'wait', 'tp1_hit']).nullish(),
+  "result": zod.enum(['WIN', 'LOSS']).nullish(),
+  "exit_price": zod.number().nullish(),
+  "exit_time": zod.string().nullish()
 })
 
 
@@ -122,7 +225,11 @@ export const GetSignalsResponseItem = zod.object({
   "stop_loss": zod.number().nullish(),
   "reasoning": zod.string(),
   "market_context": zod.string(),
-  "current_price": zod.number()
+  "current_price": zod.number(),
+  "status": zod.enum(['active', 'tp_hit', 'sl_hit', 'wait', 'tp1_hit']).nullish(),
+  "result": zod.enum(['WIN', 'LOSS']).nullish(),
+  "exit_price": zod.number().nullish(),
+  "exit_time": zod.string().nullish()
 })
 export const GetSignalsResponse = zod.array(GetSignalsResponseItem)
 
@@ -150,6 +257,33 @@ export const GetCurrentMarketResponse = zod.object({
   "close": zod.number(),
   "epoch": zod.number()
 })).optional()
+})
+
+
+/**
+ * @summary Get upcoming economic calendar events
+ */
+export const GetCalendarResponse = zod.object({
+  "alertLevel": zod.enum(['CLEAR', 'CAUTION', 'HIGH_ALERT']),
+  "alertMessage": zod.string(),
+  "upcomingEvents": zod.array(zod.object({
+  "title": zod.string(),
+  "date": zod.string().describe('ISO datetime string (EST timezone)'),
+  "country": zod.string(),
+  "impact": zod.string(),
+  "forecast": zod.string().nullish(),
+  "previous": zod.string().nullish(),
+  "actual": zod.string().nullish()
+})),
+  "todayEvents": zod.array(zod.object({
+  "title": zod.string(),
+  "date": zod.string().describe('ISO datetime string (EST timezone)'),
+  "country": zod.string(),
+  "impact": zod.string(),
+  "forecast": zod.string().nullish(),
+  "previous": zod.string().nullish(),
+  "actual": zod.string().nullish()
+}))
 })
 
 

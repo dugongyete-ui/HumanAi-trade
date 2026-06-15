@@ -7,9 +7,17 @@
  */
 
 export * from './botStatus';
+export * from './botStatusMode';
+export * from './calendarEvent';
+export * from './calendarResponse';
+export * from './calendarResponseAlertLevel';
 export * from './candle';
 export * from './getSignalsParams';
 export * from './healthStatus';
 export * from './marketData';
+export * from './monitorState';
 export * from './signal';
 export * from './signalDecision';
+export * from './signalResult';
+export * from './signalStatus';
+export * from './winRate';

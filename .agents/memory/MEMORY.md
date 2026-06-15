@@ -1,0 +1,2 @@
+- [Dashboard queryKey pattern](dashboard-querykey.md) — TanStack Query v5 UseQueryOptions requires queryKey; always pass explicit getter when calling Orval hooks.
+- [API Server rebuild required](api-server-rebuild.md) — Bot runs from compiled dist/; changes to routes need `pnpm --filter @workspace/api-server run build` then restart workflow.

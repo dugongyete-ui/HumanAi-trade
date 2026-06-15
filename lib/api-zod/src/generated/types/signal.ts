@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SignalDecision } from './signalDecision';
+import type { SignalResult } from './signalResult';
+import type { SignalStatus } from './signalStatus';
 
 export interface Signal {
   id: string;
@@ -18,4 +20,8 @@ export interface Signal {
   reasoning: string;
   market_context: string;
   current_price: number;
+  status?: SignalStatus;
+  result?: SignalResult;
+  exit_price?: number | null;
+  exit_time?: string | null;
 }

@@ -2,14 +2,55 @@ import cron from "node-cron";
 import { fetchCandles, fetchCurrentTick, checkMarketOpen, GRANULARITY } from "./deriv-client.js";
 import { buildTimeframeData } from "./indicators.js";
 import { analyzeMarket, recordSignalResult as recordMemoryResult } from "./ai-agent.js";
-import { storeSignal, updateSignalResult, getSignals, getLastSignal, getTotalCount, getWinRate, type Signal } from "./signal-store.js";
-import { sendMessage, formatSignal, formatResult } from "./telegram.js";
+import {
+  storeSignal, updateSignalResult, getSignals, getLastSignal,
+  getTotalCount, getWinRate, type Signal,
+} from "./signal-store.js";
+import { sendMessage, formatSignal, formatResult, formatPartialTP } from "./telegram.js";
 import { logger } from "./logger.js";
 
-const CONFIDENCE_THRESHOLD = 0.60;
-const CRON_SCHEDULE = "*/1 * * * *";       // Analisis setiap 1 menit
-const MONITOR_INTERVAL_MS = 10_000;        // Cek harga sinyal aktif setiap 10 detik
-const MARKET_CACHE_TTL = 3 * 60 * 1000;   // Cache status pasar 3 menit
+const CRON_SCHEDULE = "*/1 * * * *";
+const MONITOR_INTERVAL_MS = 10_000;
+const MARKET_CACHE_TTL = 3 * 60 * 1000;
+
+// ─── Session-aware Thresholds ─────────────────────────────────────────────────
+
+interface SessionConfig {
+  confidenceMin: number;
+  confluenceMin: number;
+  label: string;
+}
+
+function getSessionConfig(): SessionConfig {
+  const h = new Date().getUTCHours();
+  // Asia session 22:00–07:59 UTC (05:00–14:59 WIB) — conservative
+  if (h >= 22 || h < 8) return { confidenceMin: 0.70, confluenceMin: 6, label: "Asia (konservatif)" };
+  // London+NY overlap 12:00–15:59 UTC — most active, standard
+  if (h >= 12 && h < 16) return { confidenceMin: 0.60, confluenceMin: 5, label: "London+NY Overlap (aktif)" };
+  // London 08:00–11:59 UTC / NY 16:00–21:59 UTC — standard
+  return { confidenceMin: 0.62, confluenceMin: 5, label: "London/NY (standar)" };
+}
+
+// ─── Monitor State (TP1/TP2 + Trailing SL) ───────────────────────────────────
+
+interface MonitorState {
+  tp1: number;        // 50% milestone — SL moves to breakeven when hit
+  tp2: number;        // original TP (final target)
+  trailingSL: number; // active SL — starts at original, moves to breakeven on TP1 hit
+  tp1Hit: boolean;    // whether TP1 milestone has been reached
+}
+
+function buildMonitorState(signal: Signal): MonitorState {
+  const entry = signal.entry_price ?? signal.current_price;
+  const tp2 = signal.take_profit ?? entry;
+  const sl = signal.stop_loss ?? entry;
+  // TP1 = 50% of the way from entry to final TP
+  const tp1 =
+    signal.decision === "BUY"
+      ? entry + (tp2 - entry) * 0.5
+      : entry - (entry - tp2) * 0.5;
+  return { tp1, tp2, trailingSL: sl, tp1Hit: false };
+}
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -22,6 +63,7 @@ interface BotState {
   task: ReturnType<typeof cron.schedule> | null;
   monitorTimer: ReturnType<typeof setInterval> | null;
   activeSignal: Signal | null;
+  monitorState: MonitorState | null;
 }
 
 const state: BotState = {
@@ -33,16 +75,15 @@ const state: BotState = {
   task: null,
   monitorTimer: null,
   activeSignal: null,
+  monitorState: null,
 };
 
-// ─── Market Open Cache ─────────────────────────────────────────────────────────
+// ─── Market Open Cache ────────────────────────────────────────────────────────
 
 let marketCache: { open: boolean; ts: number } | null = null;
 
 async function cachedMarketOpen(): Promise<boolean> {
-  if (marketCache && Date.now() - marketCache.ts < MARKET_CACHE_TTL) {
-    return marketCache.open;
-  }
+  if (marketCache && Date.now() - marketCache.ts < MARKET_CACHE_TTL) return marketCache.open;
   const open = await checkMarketOpen();
   marketCache = { open, ts: Date.now() };
   return open;
@@ -57,41 +98,94 @@ export class MarketClosedError extends Error {
   }
 }
 
-// ─── Price Monitor (MONITORING mode) ──────────────────────────────────────────
+// ─── Signal Close Handler ─────────────────────────────────────────────────────
+
+async function handleSignalClose(
+  signal: Signal,
+  exitPrice: number,
+  result: "WIN" | "LOSS",
+  closeType: "tp" | "tp2" | "sl" | "breakeven"
+): Promise<void> {
+  updateSignalResult(signal.id, result, exitPrice);
+  recordMemoryResult(result, exitPrice);
+
+  const isBreakeven = closeType === "breakeven";
+  await sendMessage(formatResult(signal, result, exitPrice, isBreakeven));
+
+  logger.info({ result, exitPrice, signalId: signal.id, closeType }, `Signal closed: ${result} (${closeType})`);
+
+  stopPriceMonitor();
+  state.mode = "ANALYZING";
+  state.activeSignal = null;
+  state.monitorState = null;
+  logger.info("Switched back to ANALYZING mode");
+}
+
+// ─── Price Monitor (MONITORING mode) ─────────────────────────────────────────
 
 async function checkSignalOutcome(): Promise<void> {
-  if (!state.activeSignal) return;
+  if (!state.activeSignal || !state.monitorState) return;
   const signal = state.activeSignal;
+  const ms = state.monitorState;
 
   try {
     const tick = await fetchCurrentTick();
     const price = tick.quote;
-    let result: "WIN" | "LOSS" | null = null;
 
     if (signal.decision === "BUY") {
-      if (signal.take_profit !== null && price >= signal.take_profit) result = "WIN";
-      else if (signal.stop_loss !== null && price <= signal.stop_loss) result = "LOSS";
+      // TP1 hit — move SL to breakeven, keep monitoring for TP2
+      if (!ms.tp1Hit && price >= ms.tp1) {
+        ms.tp1Hit = true;
+        ms.trailingSL = signal.entry_price ?? signal.current_price;
+        await sendMessage(formatPartialTP(signal, price, ms.tp1, ms.tp2));
+        logger.info(
+          { tp1: ms.tp1.toFixed(2), breakeven: ms.trailingSL.toFixed(2) },
+          "TP1 hit — SL moved to breakeven, waiting for TP2"
+        );
+        return;
+      }
+      // TP2 — full WIN
+      if (price >= ms.tp2) {
+        await handleSignalClose(signal, price, "WIN", ms.tp1Hit ? "tp2" : "tp");
+        return;
+      }
+      // Trailing SL hit
+      if (price <= ms.trailingSL) {
+        // If TP1 was already hit, capital is protected → count as breakeven WIN
+        await handleSignalClose(signal, price, ms.tp1Hit ? "WIN" : "LOSS", ms.tp1Hit ? "breakeven" : "sl");
+        return;
+      }
     } else if (signal.decision === "SELL") {
-      if (signal.take_profit !== null && price <= signal.take_profit) result = "WIN";
-      else if (signal.stop_loss !== null && price >= signal.stop_loss) result = "LOSS";
+      if (!ms.tp1Hit && price <= ms.tp1) {
+        ms.tp1Hit = true;
+        ms.trailingSL = signal.entry_price ?? signal.current_price;
+        await sendMessage(formatPartialTP(signal, price, ms.tp1, ms.tp2));
+        logger.info(
+          { tp1: ms.tp1.toFixed(2), breakeven: ms.trailingSL.toFixed(2) },
+          "TP1 hit — SL moved to breakeven, waiting for TP2"
+        );
+        return;
+      }
+      if (price <= ms.tp2) {
+        await handleSignalClose(signal, price, "WIN", ms.tp1Hit ? "tp2" : "tp");
+        return;
+      }
+      if (price >= ms.trailingSL) {
+        await handleSignalClose(signal, price, ms.tp1Hit ? "WIN" : "LOSS", ms.tp1Hit ? "breakeven" : "sl");
+        return;
+      }
     }
 
-    if (result) {
-      updateSignalResult(signal.id, result, price);
-      recordMemoryResult(result, price);
-      await sendMessage(formatResult(signal, result, price));
-      logger.info({ result, exitPrice: price, signalId: signal.id }, `Signal ${result}`);
-
-      stopPriceMonitor();
-      state.mode = "ANALYZING";
-      state.activeSignal = null;
-      logger.info("TP/SL triggered — switched back to ANALYZING mode");
-    } else {
-      logger.debug(
-        { price: price.toFixed(2), tp: signal.take_profit?.toFixed(2), sl: signal.stop_loss?.toFixed(2) },
-        "Monitoring: waiting for trigger"
-      );
-    }
+    logger.debug(
+      {
+        price: price.toFixed(2),
+        tp1: ms.tp1.toFixed(2),
+        tp2: ms.tp2.toFixed(2),
+        trailSL: ms.trailingSL.toFixed(2),
+        tp1Hit: ms.tp1Hit,
+      },
+      "Monitoring: waiting for trigger"
+    );
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.toLowerCase().includes("closed")) {
@@ -100,20 +194,30 @@ async function checkSignalOutcome(): Promise<void> {
       stopPriceMonitor();
       state.mode = "ANALYZING";
       state.activeSignal = null;
+      state.monitorState = null;
     } else {
       logger.error({ err }, "Error checking signal outcome");
     }
   }
 }
 
-function startPriceMonitor(): void {
+function startPriceMonitor(signal: Signal): void {
   if (state.monitorTimer) return;
+  state.monitorState = buildMonitorState(signal);
   state.monitorTimer = setInterval(() => {
     if (!state.paused) {
       checkSignalOutcome().catch((err) => logger.error({ err }, "Monitor tick error"));
     }
   }, MONITOR_INTERVAL_MS);
-  logger.info({ intervalSec: MONITOR_INTERVAL_MS / 1000 }, "Price monitor started");
+  logger.info(
+    {
+      intervalSec: MONITOR_INTERVAL_MS / 1000,
+      tp1: state.monitorState.tp1.toFixed(2),
+      tp2: state.monitorState.tp2.toFixed(2),
+      trailSL: state.monitorState.trailingSL.toFixed(2),
+    },
+    "Price monitor started with TP1/TP2/TrailingSL"
+  );
 }
 
 function stopPriceMonitor(): void {
@@ -124,7 +228,7 @@ function stopPriceMonitor(): void {
   }
 }
 
-// ─── Full Analysis (ANALYZING mode) ───────────────────────────────────────────
+// ─── Full Analysis (ANALYZING mode) ──────────────────────────────────────────
 
 export async function runAnalysis(): Promise<Signal | null> {
   logger.info("Starting XAUUSD market analysis");
@@ -159,31 +263,50 @@ export async function runAnalysis(): Promise<Signal | null> {
   const signal = storeSignal(aiSignal, currentPrice);
   state.lastAnalysis = new Date().toISOString();
 
+  // Apply session-aware thresholds
+  const sessionConfig = getSessionConfig();
+  const confluenceOk = (aiSignal.confluence_score ?? 0) >= sessionConfig.confluenceMin;
   const isActionable =
-    aiSignal.decision !== "WAIT" && aiSignal.confidence >= CONFIDENCE_THRESHOLD;
+    aiSignal.decision !== "WAIT" &&
+    aiSignal.confidence >= sessionConfig.confidenceMin &&
+    confluenceOk;
 
   if (isActionable) {
     await sendMessage(formatSignal(signal));
-    logger.info({ decision: aiSignal.decision, id: signal.id }, "Signal sent to Telegram");
+    logger.info(
+      { decision: aiSignal.decision, id: signal.id, session: sessionConfig.label },
+      "Signal sent to Telegram"
+    );
 
-    // Switch to MONITORING mode
     state.mode = "MONITORING";
     state.activeSignal = signal;
-    startPriceMonitor();
+    startPriceMonitor(signal);
     logger.info(
-      { tp: aiSignal.take_profit, sl: aiSignal.stop_loss },
-      "Switched to MONITORING mode — waiting for TP/SL"
+      {
+        tp1: state.monitorState?.tp1.toFixed(2),
+        tp2: state.monitorState?.tp2.toFixed(2),
+        trailSL: state.monitorState?.trailingSL.toFixed(2),
+      },
+      "Switched to MONITORING mode"
     );
   } else if (aiSignal.decision === "WAIT") {
     logger.info("AI decision: WAIT — continuing analysis next cycle");
   } else {
-    logger.info({ confidence: aiSignal.confidence }, "Confidence below threshold — skipping");
+    logger.info(
+      {
+        confidence: aiSignal.confidence,
+        minRequired: sessionConfig.confidenceMin,
+        confluenceOk,
+        session: sessionConfig.label,
+      },
+      "Confidence/confluence below session threshold — skipping signal"
+    );
   }
 
   return signal;
 }
 
-// ─── Bot Lifecycle ─────────────────────────────────────────────────────────────
+// ─── Bot Lifecycle ────────────────────────────────────────────────────────────
 
 export function startBot(): void {
   if (state.task) return;
@@ -194,7 +317,7 @@ export function startBot(): void {
 
   state.task = cron.schedule(CRON_SCHEDULE, async () => {
     if (state.paused) return;
-    if (state.mode === "MONITORING") return; // price monitor handles this
+    if (state.mode === "MONITORING") return;
 
     state.nextTick = null;
     try {
@@ -202,7 +325,7 @@ export function startBot(): void {
     } catch (err) {
       if (err instanceof MarketClosedError) {
         logger.warn("Scheduled analysis skipped — market closed");
-        marketCache = null; // clear cache so next cycle re-checks
+        marketCache = null;
       } else {
         logger.error({ err }, "Scheduled analysis failed");
       }
@@ -213,7 +336,6 @@ export function startBot(): void {
   state.nextTick = getNextRunTime();
   logger.info({ schedule: CRON_SCHEDULE }, "Bot scheduler started (1-minute cycle)");
 
-  // Initial analysis attempt
   runAnalysis().catch((err) => {
     if (err instanceof MarketClosedError) {
       logger.warn("Initial analysis skipped — market is currently closed. Will retry on schedule.");
@@ -233,6 +355,7 @@ export function stopBot(): void {
   state.paused = false;
   state.mode = "ANALYZING";
   state.activeSignal = null;
+  state.monitorState = null;
   state.nextTick = null;
   logger.info("Bot scheduler stopped");
 }
@@ -267,6 +390,14 @@ export function getBotStatus() {
     totalSignals: getTotalCount(),
     lastSignal: getLastSignal(),
     activeSignal: state.activeSignal,
+    monitorState: state.monitorState
+      ? {
+          tp1: state.monitorState.tp1,
+          tp2: state.monitorState.tp2,
+          trailingSL: state.monitorState.trailingSL,
+          tp1Hit: state.monitorState.tp1Hit,
+        }
+      : null,
     winRate: { wins, losses, rate },
     nextAnalysisIn:
       state.mode === "MONITORING"

@@ -5,13 +5,21 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { BotStatusMode } from './botStatusMode';
+import type { MonitorState } from './monitorState';
 import type { Signal } from './signal';
+import type { WinRate } from './winRate';
 
 export interface BotStatus {
   running: boolean;
+  paused: boolean;
+  mode: BotStatusMode;
   lastAnalysis?: string | null;
   totalSignals: number;
   lastSignal?: Signal | null;
+  activeSignal?: Signal | null;
+  monitorState?: MonitorState | null;
+  winRate: WinRate;
   /** Seconds until next scheduled analysis */
   nextAnalysisIn?: number | null;
 }

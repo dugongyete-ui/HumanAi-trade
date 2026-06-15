@@ -1,0 +1,56 @@
+{
+  "memory": [
+    {
+      "timestamp": "2026-06-15T00:16:19.814Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 07.16.01",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4300.94,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "NEUTRAL"
+      },
+      "confluence_score": 3,
+      "market_context": "Harga berada di zona overbought ekstrem pada semua timeframe intraday (M5 RSI 92.5, H1 CCI 368) dan menembus upper Bollinger Band H4. Namun, struktur H4 masih sideways dengan EMA 50 (4303.39) bertindak sebagai resistance dinamis kritis tepat di atas harga saat ini. Sesi Asia cenderung rendah volume, meningkatkan risiko false breakout.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null
+    },
+    {
+      "timestamp": "2026-06-15T00:16:08.949Z",
+      "timeWib": "Senin, 15 Juni 2026 pukul 07.15.50",
+      "decision": "WAIT",
+      "confidence": 0.45,
+      "price": 4300.83,
+      "market_phase": "VOLATILE",
+      "bias": {
+        "H4": "NEUTRAL",
+        "H1": "BULLISH",
+        "M15": "NEUTRAL"
+      },
+      "confluence_score": 3,
+      "market_context": "Harga berada di zona overbought ekstrem pada M5 dan H1 dengan RSI > 90 dan CCI > 360, namun H4 menunjukkan struktur sideways dengan harga baru saja menembus upper Bollinger Band dan mendekati EMA 50 (4303.39) sebagai resistance dinamis. Sesi Asia cenderung rendah volume, meningkatkan risiko false breakout di level kritis ini.",
+      "entry_price": null,
+      "take_profit": null,
+      "stop_loss": null
+    }
+  ],
+  "sessionStats": {
+    "wins": 0,
+    "losses": 0,
+    "totalSignals": 0,
+    "totalAnalyses": 2,
+    "waitCount": 2,
+    "lastMarketPhases": [
+      "VOLATILE",
+      "VOLATILE"
+    ],
+    "lastBiasH4": [
+      "NEUTRAL",
+      "NEUTRAL"
+    ]
+  },
+  "savedAt": "2026-06-15T00:16:21.814Z"
+}

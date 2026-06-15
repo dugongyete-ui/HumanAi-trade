@@ -1,6 +1,7 @@
 import type { TimeframeData } from "./indicators.js";
 import { logger } from "./logger.js";
 import { getCalendarContext, formatCalendarForAI } from "./news-calendar.js";
+import { loadPersistedMemory, saveMemoryToDisk } from "./persistent-memory.js";
 
 const AI_API_URL = process.env.AI_API_URL ?? "https://qwn-api--miok1qpgd.replit.app/v1/chat/completions";
 const AI_API_KEY = process.env.AI_API_KEY ?? "";
@@ -228,6 +229,24 @@ const sessionStats: SessionStats = {
   lastBiasH4: [],
 };
 
+// Load persisted memory from disk on startup
+(function initPersistedMemory() {
+  const persisted = loadPersistedMemory();
+  if (persisted && Array.isArray(persisted.memory)) {
+    memory.push(...(persisted.memory as MemoryEntry[]).slice(0, MAX_MEMORY));
+    const s = persisted.sessionStats as Partial<SessionStats>;
+    if (s) {
+      if (typeof s.wins === "number") sessionStats.wins = s.wins;
+      if (typeof s.losses === "number") sessionStats.losses = s.losses;
+      if (typeof s.totalSignals === "number") sessionStats.totalSignals = s.totalSignals;
+      if (typeof s.totalAnalyses === "number") sessionStats.totalAnalyses = s.totalAnalyses;
+      if (typeof s.waitCount === "number") sessionStats.waitCount = s.waitCount;
+      if (Array.isArray(s.lastMarketPhases)) sessionStats.lastMarketPhases = s.lastMarketPhases;
+      if (Array.isArray(s.lastBiasH4)) sessionStats.lastBiasH4 = s.lastBiasH4;
+    }
+  }
+})();
+
 /** Called after every analysis cycle */
 export function recordAnalysis(signal: AISignal, price: number, timeWib: string): void {
   sessionStats.totalAnalyses++;
@@ -263,6 +282,7 @@ export function recordAnalysis(signal: AISignal, price: number, timeWib: string)
 
   memory.unshift(entry);
   if (memory.length > MAX_MEMORY) memory.splice(MAX_MEMORY);
+  saveMemoryToDisk(memory, sessionStats);
 }
 
 /** Called when TP/SL is hit */
@@ -283,6 +303,7 @@ export function recordSignalResult(result: "WIN" | "LOSS", exitPrice: number): v
       minute: "2-digit",
     });
   }
+  saveMemoryToDisk(memory, sessionStats);
 }
 
 /** Build natural-language memory context injected into each AI call */
