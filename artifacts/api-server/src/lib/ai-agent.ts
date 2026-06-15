@@ -154,14 +154,21 @@ Anda **ADAPTIF**: gunakan semua data yang relevan dari input, abaikan yang tidak
 
 ## 8. ATURAN KERAS (TIDAK BOLEH DILANGGAR)
 
-JANGAN berikan BUY/SELL jika confidence < 0.60
-JANGAN berikan BUY/SELL jika confluence_score < 5
-JANGAN berikan BUY/SELL jika R:R < 1.5
+JANGAN berikan BUY/SELL jika confidence < 0.60  ← berlaku untuk IMMEDIATE_ENTRY saja
+JANGAN berikan BUY/SELL jika confluence_score < 5 ← berlaku untuk IMMEDIATE_ENTRY saja
+JANGAN berikan BUY/SELL jika R:R < 1.5           ← berlaku untuk IMMEDIATE_ENTRY saja
 JANGAN abaikan konteks timeframe yang lebih besar
 JANGAN memberi sinyal hanya demi "terlihat aktif"
 SELALU sertakan level invalidasi
 SELALU jelaskan apa yang akan membuat analisis ini salah
 WAIT adalah keputusan profesional — bukan kelemahan
+
+⚠️ PENGECUALIAN MODE ON-DEMAND (/chat):
+Aturan confidence/confluence/R:R di atas HANYA berlaku untuk IMMEDIATE_ENTRY.
+Untuk PENDING_SETUP (entry di masa depan), aturan tersebut TIDAK berlaku —
+Anda WAJIB memberikan PENDING_SETUP selama ada bias arah apapun yang dapat
+diidentifikasi. PENDING_SETUP bukan "memberi sinyal demi terlihat aktif" —
+ini adalah rencana trading profesional yang menunggu kondisi ideal datang.
 
 ---
 
@@ -958,9 +965,57 @@ export async function analyzeMarketOnDemand(
   parsed.lesson ??= "-";
 
   if (parsed.setup_type === "NO_SETUP") {
-    parsed.decision = "WAIT";
-    parsed.entry_price = null; parsed.take_profit = null;
-    parsed.stop_loss = null; parsed.risk_reward_ratio = null;
+    // ── Last-resort fallback: convert NO_SETUP → PENDING_SETUP ────────────────
+    // The user explicitly wants BUY/SELL direction always. If the AI has key
+    // levels and any timeframe bias, we can auto-build a valid pending setup
+    // rather than returning a useless "no signal" response.
+    const support = parsed.key_levels?.nearest_support;
+    const resistance = parsed.key_levels?.nearest_resistance;
+    const h4 = parsed.timeframe_bias?.H4 ?? "NEUTRAL";
+    const h1 = parsed.timeframe_bias?.H1 ?? "NEUTRAL";
+
+    // Determine dominant bias: H4 > H1 priority
+    const dominantBullish = h4 === "BULLISH" || (h4 === "NEUTRAL" && h1 === "BULLISH");
+    const dominantBearish = h4 === "BEARISH" || (h4 === "NEUTRAL" && h1 === "BEARISH");
+
+    if ((dominantBullish || dominantBearish) && support != null && resistance != null) {
+      const range = resistance - support;
+      if (dominantBullish) {
+        // BUY_LIMIT at support — wait for price to come down to demand zone
+        parsed.decision = "BUY";
+        parsed.setup_type = "PENDING_SETUP";
+        parsed.pending_order_type = "BUY_LIMIT";
+        parsed.entry_price = support;
+        parsed.take_profit = resistance;
+        parsed.stop_loss = support - range * 0.3;
+        parsed.risk_reward_ratio = parseFloat(((resistance - support) / (range * 0.3)).toFixed(2));
+        parsed.pending_trigger = `Tunggu harga pullback ke zona support $${support.toFixed(2)}. Konfirmasi dengan bullish price action (engulfing/pin bar) di M15 sebelum eksekusi.`;
+        parsed.strategy_label = parsed.strategy_label && parsed.strategy_label !== "-"
+          ? parsed.strategy_label
+          : "Pending BUY LIMIT — tunggu pullback ke support zone";
+        logger.info({ entry: support, tp: resistance, sl: parsed.stop_loss }, "NO_SETUP → PENDING_SETUP BUY_LIMIT (fallback)");
+      } else {
+        // SELL_LIMIT at resistance — wait for price to rally up to supply zone
+        parsed.decision = "SELL";
+        parsed.setup_type = "PENDING_SETUP";
+        parsed.pending_order_type = "SELL_LIMIT";
+        parsed.entry_price = resistance;
+        parsed.take_profit = support;
+        parsed.stop_loss = resistance + range * 0.3;
+        parsed.risk_reward_ratio = parseFloat(((resistance - support) / (range * 0.3)).toFixed(2));
+        parsed.pending_trigger = `Tunggu harga rally ke zona resistance $${resistance.toFixed(2)}. Konfirmasi dengan bearish rejection (shooting star/bearish engulfing) di M15 sebelum eksekusi.`;
+        parsed.strategy_label = parsed.strategy_label && parsed.strategy_label !== "-"
+          ? parsed.strategy_label
+          : "Pending SELL LIMIT — tunggu rally ke resistance zone";
+        logger.info({ entry: resistance, tp: support, sl: parsed.stop_loss }, "NO_SETUP → PENDING_SETUP SELL_LIMIT (fallback)");
+      }
+    } else {
+      // Truly no directional data at all — keep as WAIT
+      parsed.decision = "WAIT";
+      parsed.entry_price = null; parsed.take_profit = null;
+      parsed.stop_loss = null; parsed.risk_reward_ratio = null;
+      logger.info("NO_SETUP kept as WAIT — no usable bias or key levels for fallback");
+    }
   } else if (parsed.setup_type === "PENDING_SETUP") {
     // PENDING_SETUP: entry is intentionally at a future level (support/resistance zone),
     // so we only validate SL/TP geometry — NOT entry proximity to current price.
